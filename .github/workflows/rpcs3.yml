@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: linux
+name: rpcs3
 on:
   # Build every 7 days
   schedule:
@@ -18,7 +18,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Create linux package
+    - name: Create rpcs3 package
       run: |
         # Install tools
         sudo apt install -y jq wget tar xz-utils pv git pcregrep
@@ -29,9 +29,9 @@ jobs:
           https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64
         chmod +x ./bin/*
         # Build packages
-        ( HOME="$(pwd)" FIM_DEBUG=1 FIM_FIFO=0 ./linux/build-arch.sh )
+        ( HOME="$(pwd)" FIM_DEBUG=1 FIM_FIFO=0 ./rpcs3/build-arch.sh )
         # Grab dist folder
-        mv ./linux/dist .
+        mv ./rpcs3/dist .
 
     - name: Set permissions for dist directory
       run: |
@@ -65,7 +65,7 @@ jobs:
         - name: release
           uses: marvinpinto/action-automatic-releases@latest
           with:
-            title: continuous-linux-gnu-x86_64
+            title: continuous-rpcs3-gnu-x86_64
             automatic_release_tag: ${{ needs.build.outputs.ssha }}
             prerelease: false
             draft: false
