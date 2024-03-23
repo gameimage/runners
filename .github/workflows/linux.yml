@@ -65,7 +65,7 @@ jobs:
         - name: release
           uses: marvinpinto/action-automatic-releases@latest
           with:
-            title: Continuous ${{ needs.build.outputs.ssha }}
+            title: continuous-linux
             automatic_release_tag: ${{ needs.build.outputs.ssha }}
             prerelease: false
             draft: false
