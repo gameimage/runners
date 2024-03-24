@@ -201,6 +201,9 @@ function _build()
 
 function main()
 {
+  # Enter script dir
+  cd "$SCRIPT_DIR"
+
   mkdir -p dist
 
   mkdir -p build && cd build
