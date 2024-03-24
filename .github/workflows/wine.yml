@@ -1,0 +1,90 @@
+# This is a basic workflow to help you get started with Actions
+
+name: wine
+on: 
+  # Build every 7 days
+  schedule:
+    - cron: "0 0 * * 0"
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Compile the base image
+      run: |
+        mkdir dist
+        # Install tools
+        sudo apt install -y tar xz-utils pv git pcregrep
+        # Build base
+        FIM_FIFO=0 FIM_DEBUG=1 BASE_CREATE=1 ./wine/wine-arch.sh
+        # Move dist
+        mv wine/dist/* ./dist
+
+    - name: Create wine dwarfs files
+      run: |
+        # Install tools
+        sudo apt install -y tar xz-utils pv git pcregrep wget
+        # Fetch static tools
+        mkdir tools
+        wget -q --show-progress --progress=dot:binary -O tools/jq \
+          https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64
+        # Make executable
+        chmod +x tools/*
+        # Update PATH
+        export PATH="$(pwd)/tools:$PATH"
+        # Create wine dists
+        FIM_FIFO=0 FIM_DEBUG=1 ./wine/wine-arch.sh
+        # Move dist
+        mv wine/dist/* ./dist
+        # Create ssha
+        for i in ./dist/*; do
+          base="$(basename "$i")"
+          dir="$(dirname "$i")"
+          ( cd "$dir" && sha256sum "$base" > "${base}.sha256sum" )
+        done
+
+    - name: Set permissions for dist directory
+      run: |
+        sudo chown -R "$(id -u)":"$(id -g)" dist/
+        sudo chmod -R 766 dist/
+
+    - name: Upload artifact to release
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: wine_dists
+        path: 'dist'
+
+    - name: Compute Short SHA
+      id: ssha
+      run: |
+        echo "ssha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    outputs:
+      ssha: ${{ steps.ssha.outputs.ssha }}
+
+  release:
+      permissions: write-all
+      needs: [build]
+      runs-on: ubuntu-latest
+
+      steps:
+        - uses: actions/download-artifact@v1
+          with:
+            name: wine_dists
+
+        - name: release
+          uses: marvinpinto/action-automatic-releases@latest
+          with:
+            title: Wine Continuous
+            automatic_release_tag: continuous_wine
+            prerelease: false
+            draft: false
+            files: |
+              wine_dists
+            repo_token: ${{ secrets.GITHUB_TOKEN }}
