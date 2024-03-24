@@ -42,12 +42,6 @@ jobs:
         FIM_FIFO=0 FIM_DEBUG=1 ./wine/wine-arch.sh
         # Move dist
         mv wine/dist/* ./dist
-        # Create ssha
-        for i in ./dist/*; do
-          base="$(basename "$i")"
-          dir="$(dirname "$i")"
-          ( cd "$dir" && sha256sum "$base" > "${base}.sha256sum" )
-        done
 
     - name: Set permissions for dist directory
       run: |
@@ -81,7 +75,7 @@ jobs:
         - name: release
           uses: marvinpinto/action-automatic-releases@latest
           with:
-            title: Wine Continuous
+            title: continuous-wine-gnu-x86_64
             automatic_release_tag: wine-gnu-x86_64
             prerelease: false
             draft: false
