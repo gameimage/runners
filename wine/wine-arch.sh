@@ -263,6 +263,10 @@ function main()
     #shellcheck disable=2016
     "$image" fim-dwarfs-overlayfs usr '"$FIM_FILE_BINARY".config/overlays/usr'
 
+    # Set up HOME
+    #shellcheck disable=2016
+    "$image" fim-config-set home '"${FIM_DIR_BINARY}"'
+
     # Create SHA for image
     sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
 
