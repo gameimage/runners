@@ -78,6 +78,9 @@ if [[ -f "${BASH_ARGV[0]}" ]]; then
   echo "Switched directory to: $DIR_NEW"
 fi
 
+# Leave the root drive binding
+ln -sfT / "$WINEPREFIX/dosdevices/z:" || true
+
 # Set HOME for wine
 export HOME="$WINEHOME" 
 
