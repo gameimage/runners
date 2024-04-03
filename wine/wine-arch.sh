@@ -220,7 +220,8 @@ function main()
   # Fetch
   local tarball="arch.tar.xz"
   if [[ ! -f "$tarball" ]]; then
-    wget -q --show-progress --progress=dot:giga "https://github.com/ruanformigoni/flatimage/releases/download/v0.2.1/arch.tar.xz"
+    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
+      | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
   fi
 
   # Uncompress
@@ -244,10 +245,6 @@ function main()
     _include_intel      "$image"
     _include_winetricks "$image"
 
-    # Set up /usr overlay
-    #shellcheck disable=2016
-    "$image" fim-dwarfs-overlayfs usr '"$FIM_FILE_BINARY".config/overlays/usr'
-
     # Remove /opt
     "$image" fim-root rm -rf /opt
 
@@ -261,6 +258,10 @@ function main()
 
     # Compress image
     FIM_COMPRESSION_DIRS="/usr" "$image" fim-compress
+
+    # Set up /usr overlay
+    #shellcheck disable=2016
+    "$image" fim-dwarfs-overlayfs usr '"$FIM_FILE_BINARY".config/overlays/usr'
 
     # Create SHA for image
     sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
