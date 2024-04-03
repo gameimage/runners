@@ -21,6 +21,12 @@ jobs:
         mkdir dist
         # Install tools
         sudo apt install -y tar xz-utils pv git pcregrep
+        # Custom packages
+        mkdir -p bin
+        export PATH="$(pwd)/bin:$PATH"
+        wget -q --show-progress --progress=dot:binary -O bin/jq \
+          https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64
+        chmod +x ./bin/*
         # Build base
         FIM_FIFO=0 FIM_DEBUG=1 BASE_CREATE=1 ./wine/wine-arch.sh
         # Move dist
@@ -30,14 +36,13 @@ jobs:
       run: |
         # Install tools
         sudo apt install -y tar xz-utils pv git pcregrep wget
-        # Fetch static tools
-        mkdir tools
-        wget -q --show-progress --progress=dot:binary -O tools/jq \
+        sudo apt remove jq
+        # Custom packages
+        mkdir -p bin
+        export PATH="$(pwd)/bin:$PATH"
+        wget -q --show-progress --progress=dot:binary -O bin/jq \
           https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64
-        # Make executable
-        chmod +x tools/*
-        # Update PATH
-        export PATH="$(pwd)/tools:$PATH"
+        chmod +x ./bin/*
         # Create wine dists
         FIM_FIFO=0 FIM_DEBUG=1 ./wine/wine-arch.sh
         # Move dist
