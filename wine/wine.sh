@@ -86,7 +86,7 @@ export USER=gameimage
 
 # Start application
 if [[ "$1" = "winetricks" ]]; then
-  winetricks "$@"
+  shift; winetricks "$@"
 else
   wine "$@"
 fi
