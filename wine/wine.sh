@@ -19,7 +19,7 @@ export PATH="/usr/bin:/opt/wine/bin:$PATH"
 # WINE env
 export WINEPREFIX="${WINEPREFIX:-"$HOME/Wine"}"
 export WINEDEBUG=${WINEDEBUG:-"-all"}
-export WINEHOME=${WINEHOME:-"$WINEPREFIX/home.wine"}
+export WINEHOME=${WINEHOME:-"/wine/home"}
 
 # DXVK env
 export DXVK_HUD=${DXVK_HUD:-"0"}
@@ -71,12 +71,22 @@ echo "Wine version: $(wine --version)"
 # Avoid symlinks
 winetricks sandbox &>"$WINEPREFIX/winetricks-sandbox.log" || true
 
-# Leave the root drive binding
-ln -sfT / "$WINEPREFIX/dosdevices/z:" || true
+# If the last argument is an executable path, enter the parent directory
+if [[ -f "${BASH_ARGV[0]}" ]]; then
+  DIR_NEW="$(dirname -- "$(readlink -f "${BASH_ARGV[0]}")")"
+  cd -- "$DIR_NEW"
+  echo "Switched directory to: $DIR_NEW"
+fi
+
+# Set HOME for wine
+export HOME="$WINEHOME" 
+
+# Set user for wine
+export USER=gameimage 
 
 # Start application
-HOME="$WINEHOME" wine "$@"
-
-# Wait for wineserver, since the program can still be executing on a different
-# process
-while pgrep -f "/tmp/fim/dwarfs/$DWARFS_SHA/.*/wineserver" &>/dev/null; do sleep 1; done
+if [[ "$1" = "winetricks" ]]; then
+  winetricks "$@"
+else
+  wine "$@"
+fi
