@@ -261,7 +261,7 @@ function main()
 
     # Set up /usr overlay
     #shellcheck disable=2016
-    "$image" fim-dwarfs-overlayfs usr '"$FIM_FILE_BINARY".config/overlays/usr'
+    "$image" fim-dwarfs-overlayfs usr '"${FIM_DIR_BINARY}"/."${FIM_BASENAME_BINARY}".config/overlays/usr'
 
     # Set up HOME
     #shellcheck disable=2016
