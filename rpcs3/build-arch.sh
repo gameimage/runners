@@ -110,14 +110,6 @@ function configure_flatimage()
   # Set perms
   "$IMAGE" fim-perms-set wayland,x11,pulseaudio,gpu,session_bus,input,usb
 
-  # Set up /usr overlay
-  #shellcheck disable=2016
-  "$IMAGE" fim-dwarfs-overlayfs usr '"${FIM_DIR_BINARY}"/."${FIM_BASENAME_BINARY}".config/overlays/usr'
-
-  # Set up rpcs3 overlay
-  #shellcheck disable=2016
-  "$IMAGE" fim-config-set dwarfs.overlay.rpcs3 '"${FIM_DIR_BINARY}"/."${FIM_BASENAME_BINARY}".config/overlays/rpcs3'
-
   # Set up HOME
   #shellcheck disable=2016
   "$IMAGE" fim-config-set home '"${FIM_DIR_BINARY}"'

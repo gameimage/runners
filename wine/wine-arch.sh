@@ -212,6 +212,7 @@ function main()
   # Enable high verbose for flatimage
   # export FIM_DEBUG_SET_ARGS="-xe"
   export FIM_DEBUG="1"
+  export FIM_FIFO="0"
 
   # shellcheck disable=2155
   local basename_image=base.flatimage
@@ -258,10 +259,6 @@ function main()
 
     # Compress image
     FIM_COMPRESSION_DIRS="/usr" "$image" fim-compress
-
-    # Set up /usr overlay
-    #shellcheck disable=2016
-    "$image" fim-dwarfs-overlayfs usr '"${FIM_DIR_BINARY}"/."${FIM_BASENAME_BINARY}".config/overlays/usr'
 
     # Set up HOME
     #shellcheck disable=2016

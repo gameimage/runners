@@ -113,14 +113,6 @@ function configure_flatimage()
   # Set perms
   "$IMAGE" fim-perms-set wayland,x11,pulseaudio,gpu,session_bus,input,usb
 
-  # Set up /usr overlay
-  #shellcheck disable=2016
-  "$IMAGE" fim-dwarfs-overlayfs usr '"${FIM_DIR_BINARY}"/."${FIM_BASENAME_BINARY}".config/overlays/usr'
-
-  # Set up pcsx2 overlay
-  #shellcheck disable=2016
-  "$IMAGE" fim-config-set dwarfs.overlay.pcsx2 '"${FIM_DIR_BINARY}"/."${FIM_BASENAME_BINARY}".config/overlays/pcsx2'
-
   # Set up HOME
   #shellcheck disable=2016
   "$IMAGE" fim-config-set home '"${FIM_DIR_BINARY}"'
