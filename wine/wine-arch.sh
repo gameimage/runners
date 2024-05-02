@@ -117,13 +117,17 @@ function _package_wine_dists()
       ;;
       "staging")
         link_wine="$(curl -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/Kron4ek/Wine-Builds/releases/latest 2>/dev/null \
-          | jq -e -r '.assets.[].browser_download_url | match(".*staging-amd64.*").string')"
+          https://api.github.com/repos/Kron4ek/Wine-Builds/releases 2>/dev/null \
+          | jq -e -r '.[].assets.[].browser_download_url  | match(".*staging-amd64.*").string' \
+          | sort -V \
+          | tail -n1)"
       ;;
       "tkg")
         link_wine="$(curl -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/Kron4ek/Wine-Builds/releases/latest 2>/dev/null \
-          | jq -e -r '.assets.[].browser_download_url | match(".*tkg-amd64.*").string')"
+          https://api.github.com/repos/Kron4ek/Wine-Builds/releases 2>/dev/null \
+          | jq -e -r '.[].assets.[].browser_download_url  | match(".*tkg-amd64.*").string' \
+          | sort -V \
+          | tail -n1)"
       ;;
       "osu-tkg")
         link_wine="$(curl -H "Accept: application/vnd.github+json" \
