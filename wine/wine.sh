@@ -90,7 +90,7 @@ fi
 # Start application
 if [[ "$1" = "winetricks" ]]; then
   shift
-  2>&1 winetricks "$@" | tee "$WINEPREFIX/winetricks.log"
+  2>&1 winetricks -f "$@" | tee "$WINEPREFIX/winetricks.log"
   echo "Winetricks log  : $WINEPREFIX/winetricks.log"
 else
   2>&1 wine "$@" | tee "$WINEPREFIX/wine.log"
