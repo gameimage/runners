@@ -177,33 +177,6 @@ function _package_wine_dists()
 
 }
 
-# Constructs a wine image
-# $1 source image file
-# $2 vendor name
-# $3 wine distribution
-# $4 build script
-function _build()
-{
-  local image="$1"
-  local vendor="$2"
-  local dist="$3"
-  local script="$4"
-  # Set out image name
-  local out="./wine-$vendor-$dist"
-  # Copy base image
-  cp "$image" "$out"
-  # Set include packages
-  eval "$script \"$out\""
-  # Clear cache
-  "$out" fim-root pacman -Scc --noconfirm
-  # Make executable
-  "$out" fim-root chmod +x /fim/scripts/wine.sh
-  # # Compress
-  "$out" fim-compress
-  # Release
-  mkdir -p dist && mv "$out" "dist/$out"
-}
-
 function main()
 {
   # Enter script dir
