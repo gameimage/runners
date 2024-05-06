@@ -64,6 +64,7 @@ function fetch_flatimage()
   # Install dependencies
   "$IMAGE" fim-root fakechroot pacman -S libxkbcommon libxkbcommon-x11 \
     lib32-libxkbcommon lib32-libxkbcommon-x11 libsm lib32-libsm fontconfig \
+    libxinerama lib32-libxinerama \
     lib32-fontconfig noto-fonts --noconfirm
 
   # Install video packages
