@@ -34,7 +34,7 @@ function _create_base()
   # Install wine dependencies
   "$image" fim-root fakechroot pacman -S wine xorg-server libxinerama lib32-libxinerama \
     mesa lib32-mesa glxinfo lib32-gcc-libs \
-    gcc-libs pcre freetype2 lib32-freetype2 which --noconfirm
+    gcc-libs pcre freetype2 lib32-freetype2 --noconfirm
   "$image" fim-root fakechroot pacman -R wine --noconfirm
 
   # Gameimage dependencies
