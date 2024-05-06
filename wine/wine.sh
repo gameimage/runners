@@ -6,7 +6,7 @@
 # @created     : Saturday Jan 21, 2023 19:00:53 -03
 ######################################################################
 
-set -e
+shopt -s nullglob
 
 SCRIPT_NAME="$(basename "$0")"
 
@@ -17,9 +17,10 @@ exec 2> >(sed "s/^/[$SCRIPT_NAME] /" >&2)
 export PATH="/usr/bin:/opt/wine/bin:$PATH"
 
 # WINE env
+export USER="${WINEUSER:-gameimage}"
+export HOME=${WINEHOME:-"$FIM_DIR_HOST_CONFIG"/home}
 export WINEPREFIX="${WINEPREFIX:-"$HOME/Wine"}"
 export WINEDEBUG=${WINEDEBUG:-"-all"}
-export WINEHOME=${WINEHOME:-"/wine/home"}
 
 # DXVK env
 export DXVK_HUD=${DXVK_HUD:-"0"}
@@ -30,15 +31,16 @@ export DXVK_STATE_CACHE=${DXVK_STATE_CACHE:-"0"}
 echo "Container   : $FIM_DIST"
 echo "Session Type: $XDG_SESSION_TYPE"
 echo '$*          :' "$*"
+echo "USER        : $USER"
+echo "WINEDEBUG   : $WINEDEBUG"
 echo "HOME        : $HOME"
 echo "WINEPREFIX  : $WINEPREFIX"
-echo "WINEHOME    : $WINEHOME"
 
 # Create WINEPREFIX
 mkdir -p "$WINEPREFIX"
 
-# Create WINEHOME
-mkdir -p "$WINEHOME"
+# Create wine HOME
+mkdir -p "$HOME"
 
 # Check gpu vendor and device
 if command -v glxinfo &>/dev/null && command -v pcregrep &>/dev/null; then
@@ -68,28 +70,29 @@ fi
 # Display wine version
 echo "Wine version: $(wine --version)"
 
-# Avoid symlinks
-winetricks sandbox &>"$WINEPREFIX/winetricks-sandbox.log" || true
+# # Avoid symlinks
+# winetricks sandbox &>"$WINEPREFIX/winetricks-sandbox.log" || true
+# # Leave the root drive binding
+# ln -sfT / "$WINEPREFIX/dosdevices/z:" || true
+
+# Replace symlinks with directories
+for i in "$WINEPREFIX/drive_c/users/$USER"/*; do
+  if [[ -h "$i" ]]; then rm -fv "$i" && mkdir -v "$i"; fi
+done
 
 # If the last argument is an executable path, enter the parent directory
 if [[ -f "${BASH_ARGV[0]}" ]]; then
   DIR_NEW="$(dirname -- "$(readlink -f "${BASH_ARGV[0]}")")"
-  cd -- "$DIR_NEW"
+  cd -- "$DIR_NEW" || { echo "Failed to switch directory to $DIR_NEW"; exit 1; }
   echo "Switched directory to: $DIR_NEW"
 fi
-
-# Leave the root drive binding
-ln -sfT / "$WINEPREFIX/dosdevices/z:" || true
-
-# Set HOME for wine
-export HOME="$WINEHOME" 
-
-# Set user for wine
-export USER=gameimage 
-
+  
 # Start application
 if [[ "$1" = "winetricks" ]]; then
-  shift; winetricks "$@"
+  shift
+  2>&1 winetricks "$@" | tee "$WINEPREFIX/winetricks.log"
+  echo "Winetricks log  : $WINEPREFIX/winetricks.log"
 else
-  wine "$@"
+  2>&1 wine "$@" | tee "$WINEPREFIX/wine.log"
+  echo "Wine log  : $WINEPREFIX/wine.log"
 fi
