@@ -14,7 +14,7 @@ exec 1> >(sed "s/^/[$SCRIPT_NAME] /")
 exec 2> >(sed "s/^/[$SCRIPT_NAME] /" >&2)
 
 # PATH
-export PATH="/usr/bin:/opt/wine/bin:$PATH"
+export PATH="/fim/mount/wine/bin:/usr/bin:/opt/wine/bin:$PATH"
 
 # WINE env
 export USER="${WINEUSER:-gameimage}"
