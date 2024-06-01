@@ -2,11 +2,10 @@
 
 name: wine
 on: 
+  workflow_dispatch:
   # Build every 7 days
   schedule:
     - cron: "0 0 * * 0"
-  push:
-  pull_request:
 
 jobs:
   build:
