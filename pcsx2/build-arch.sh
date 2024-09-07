@@ -5,8 +5,10 @@
 # @file        : build
 # @created     : Friday Nov 24, 2023 19:06:13 -03
 #
-# @description : 
+# @description :
 ######################################################################
+
+#shellcheck disable=2016
 
 set -e
 
@@ -37,6 +39,15 @@ function fetch_pcsx2()
 
   # Remove image
   rm "$BUILD_DIR/$appimage_pcsx2"
+
+  # Move pcsx2 dir
+  mv "$BUILD_DIR"/squashfs-root/usr pcsx2
+
+  # Export pcsx2 dir location
+  export PCSX2_DIR="$BUILD_DIR"/pcsx2
+
+  # Remove squashfs-root
+  rm -rf ./squashfs-root
 }
 
 
@@ -44,22 +55,23 @@ function fetch_flatimage()
 {
   msg "${BUILD_DIR:?BUILD_DIR is undefined}"
 
-  # Fetch container
-  if ! [ -f "$BUILD_DIR/arch.tar.xz" ]; then
-    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-      | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+  if [[ -n "$1" ]]; then
+    cp "$1" "$IMAGE"
+  else
+    # Fetch container
+    if ! [ -f "$BUILD_DIR/arch.tar.xz" ]; then
+      wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
+        | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+    fi
+
+    # Extract container
+    rm -f "$IMAGE"
+
+    tar xf arch.tar.xz
   fi
 
-  # Extract container
-  rm -f "$IMAGE"
-
-  tar xf arch.tar.xz
-
-  # FIM_COMPRESSION_LEVEL
-  export FIM_COMPRESSION_LEVEL=6
-
-  # Resize
-  "$IMAGE" fim-resize 3G
+  # Enable network
+  "$IMAGE" fim-perms set network
 
   # Update
   "$IMAGE" fim-root fakechroot pacman -Syu --noconfirm
@@ -79,44 +91,26 @@ function fetch_flatimage()
   "$IMAGE" fim-root fakechroot pacman -S libappindicator-gtk3 \
     lib32-libappindicator-gtk3 --noconfirm
 
-  # Compress self
-  "$IMAGE" fim-compress
+  # Commit changes
+  "$IMAGE" fim-commit
 }
 
 
 function compress_pcsx2()
 {
   msg "${BUILD_DIR:?BUILD_DIR is undefined}"
-
+  msg "${PCSX2_DIR:?PCSX2_DIR is undefined}"
   # Copy pcsx2 runner
-  cp "$SCRIPT_DIR"/boot.sh "$BUILD_DIR"/squashfs-root/usr/boot
-
+  cp "$SCRIPT_DIR"/boot.sh "$PCSX2_DIR"/boot
+  # Create layer dirs
+  mkdir -p ./root/opt
+  mkdir -p ./root/home/pcsx2/.config
+  # Move pcsx2 to layer dir
+  mv "$PCSX2_DIR" ./root/opt
   # Compress pcsx2
-  "$IMAGE" fim-exec mkdwarfs -i "$BUILD_DIR"/squashfs-root/usr -o "$BUILD_DIR/pcsx2.dwarfs"
-}
-
-function hooks_add()
-{
-  msg "${IMAGE:?IMAGE is undefined}"
-  msg "${SCRIPT_DIR:?SCRIPT_DIR is undefined}"
-
-  "$IMAGE" fim-hook-add-pre "$SCRIPT_DIR"/hook-pcsx2.sh
-}
-
-function configure_flatimage()
-{
-  msg "${IMAGE:?IMAGE is undefined}"
-
-  # Set default command
-  # shellcheck disable=2016
-  "$IMAGE" fim-cmd '"$FIM_BINARY_PCSX2"'
-
-  # Set perms
-  "$IMAGE" fim-perms-set wayland,x11,pulseaudio,gpu,session_bus,input,usb
-
-  # Set up HOME
-  #shellcheck disable=2016
-  "$IMAGE" fim-config-set home '"${FIM_DIR_BINARY}"'
+  "$IMAGE" fim-layer create ./root pcsx2.dwarfs
+  # Remove uncompressed files
+  rm -rf ./root
 }
 
 function package()
@@ -158,10 +152,27 @@ function main()
   export IMAGE="$BUILD_DIR/arch.flatimage"
 
   fetch_pcsx2
-  fetch_flatimage
+  # FlatImage
+  if [[ "$1" = "--flatimage" ]] && [[ -n "$2" ]]; then
+    fetch_flatimage "$2"
+  else
+    fetch_flatimage
+  fi
+
+  # Set variables
+  "$IMAGE" fim-env set 'HOME=/home/pcsx2' \
+    'PATH="/opt/pcsx2/bin:$PATH"' \
+    'FIM_BINARY_PCSX2="/opt/pcsx2/boot"'
+
+  # Compress changes
   compress_pcsx2
-  hooks_add
-  configure_flatimage
+
+  # Set default command
+  "$IMAGE" fim-boot '/opt/pcsx2/boot'
+
+  # Set perms
+  "$IMAGE" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+
   package
 }
 
