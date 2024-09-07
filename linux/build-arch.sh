@@ -20,18 +20,23 @@ function fetch_flatimage()
 {
   msg "${IMAGE:?IMAGE is undefined}"
 
-  # Fetch container
-  if ! [ -f "$BUILD_DIR/arch.tar.xz" ]; then
-    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-      | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+
+  if [[ -n "$1" ]]; then
+    cp "$1" "$IMAGE"
+  else
+    # Fetch container
+    if ! [ -f "$BUILD_DIR/arch.tar.xz" ]; then
+      wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
+        | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+    fi
+
+    # Extract container
+    rm -f "$BUILD_DIR/arch.flatimage"
+    tar xf arch.tar.xz
   fi
 
-  # Extract container
-  rm -f "$BUILD_DIR/arch.flatimage"
-  tar xf arch.tar.xz
-
-  # Resize
-  "$IMAGE" fim-resize 5G
+  # Enable network
+  "$IMAGE" fim-perms set network
 
   # Update
   "$IMAGE" fim-root fakechroot pacman -Syu --noconfirm
@@ -78,20 +83,8 @@ function fetch_flatimage()
   ## Jazz Jackrabbit
   "$IMAGE" fim-root ln -s /lib/libFLAC.so /lib/libFLAC.so.8
 
-  # Compress self
-  "$IMAGE" fim-compress
-}
-
-function configure_flatimage()
-{
-  msg "${IMAGE:?IMAGE is undefined}"
-
-  # Set perms
-  "$IMAGE" fim-perms-set wayland,x11,pulseaudio,gpu,session_bus,input,usb
-
-  # Set up HOME
-  #shellcheck disable=2016
-  "$IMAGE" fim-config-set home '"${FIM_DIR_BINARY}"'
+  # Commit changes
+  "$IMAGE" fim-commit
 }
 
 function main()
@@ -108,8 +101,15 @@ function main()
   # Container file path
   IMAGE="$BUILD_DIR/arch.flatimage"
 
-  fetch_flatimage
-  configure_flatimage
+  # FlatImage
+  if [[ "$1" = "--flatimage" ]] && [[ -n "$2" ]]; then
+    fetch_flatimage "$2"
+  else
+    fetch_flatimage
+  fi
+
+  # Set perms
+  "$IMAGE" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
   # Rename
   mv "$IMAGE" linux.flatimage
