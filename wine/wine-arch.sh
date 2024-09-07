@@ -25,9 +25,6 @@ function _create_base()
 {
   local image="$1"
 
-  # Resize
-  "$image" fim-resize 4G
-
   # Update
   "$image" fim-root fakechroot pacman -Syu --noconfirm
 
@@ -62,8 +59,8 @@ function _include_winetricks()
   :done
 	END
 
-  "$image" fim-root cp ./winetricks /usr/bin/winetricks
-  "$image" fim-root chmod +x /usr/bin/winetricks
+  "$image" fim-exec cp ./winetricks /usr/bin/winetricks
+  "$image" fim-exec chmod +x /usr/bin/winetricks
 }
 
 # Include amd video drivers in image
@@ -153,18 +150,20 @@ function _package_wine_dists()
     # Fetch wine
     [[ -f "$file_name" ]] || wget --progress=dot:mega "$link_wine"
 
+    # Create layer directory
+    mkdir -p ./root/opt/wine
+
     # Extract wine
-    mkdir wine
-    tar -xf "$file_name" -C wine --strip-components=1
+    tar -xf "$file_name" -C root/opt/wine --strip-components=1
 
     # Remove tarball
     rm "$file_name"
 
     # Copy wine boot script
-    cp "$SCRIPT_DIR"/wine.sh ./wine/bin/wine.sh
+    cp "$SCRIPT_DIR"/wine.sh ./root/opt/wine/bin/wine.sh
 
     # Compress files
-    "$image" fim-root mkdwarfs -i ./wine -o "${dist_wine}.dwarfs"
+    "$image" fim-exec mkdwarfs -f -i ./root -o ./"${dist_wine}".dwarfs
 
     # Remove temporary directory
     rm -rf ./wine
@@ -181,11 +180,8 @@ function main()
 {
   # Enter script dir
   cd "$SCRIPT_DIR"
-
   mkdir -p dist
-
   mkdir -p build && cd build
-
 
   # Enable high verbose for flatimage
   # export FIM_DEBUG_SET_ARGS="-xe"
@@ -197,23 +193,28 @@ function main()
   local image="$SCRIPT_DIR/build/$basename_image"
 
   # Fetch
-  local tarball="arch.tar.xz"
-  if [[ ! -f "$tarball" ]]; then
-    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-      | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+  if [[ "$1" = --flatimage ]]; then
+    [[ -z "$2" ]] && { echo "Please specify image path"; exit 1; }
+    cp "$2" "$image"
+  else
+    local tarball="arch.tar.xz"
+    if [[ ! -f "$tarball" ]]; then
+      wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
+        | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+    fi
+
+    # Uncompress
+    if [[ ! -f "arch.flatimage" ]]; then
+      { pv -nf "$tarball" | tar xJ; } 2>&1 | xargs -I{} echo '[decompress %] {}'
+      rm "$tarball"
+    fi
+
+    # Set image name
+    cp ./"arch.flatimage" "$image"
   fi
 
-  # Uncompress
-  if [[ ! -f "arch.flatimage" ]]; then
-    { pv -nf "$tarball" | tar xJ; } 2>&1 | xargs -I{} echo '[decompress %] {}'
-    rm "$tarball"
-  fi
-
-  # Set image name
-  cp ./"arch.flatimage" "$image"
-
-  # Disable permissions to avoid issues with some things not found
-  "$image" fim-perms-set ""
+  # Enable only home and network
+  "$image" fim-perms set home,network
 
   if [[ -v BASE_CREATE ]]; then
     # Create base image
@@ -225,22 +226,21 @@ function main()
     _include_winetricks "$image"
 
     # Remove /opt
-    "$image" fim-root rm -rf /opt
+    "$image" fim-exec rm -rf /opt
 
-    # Include wine hook
+    # Set environment
     # shellcheck disable=2016
-    "$image" fim-cmd '"$FIM_BINARY_WINE"'
-    "$image" fim-hook-add-pre "$SCRIPT_DIR"/hook-wine.sh
+    "$image" fim-env set 'PATH="/opt/wine/bin:$PATH"' 'FIM_BINARY_WINE="/opt/wine/bin/wine.sh"'
+
+    # Set startup command
+    # shellcheck disable=2016
+    "$image" fim-boot /opt/wine/bin/wine.sh
 
     # Set permissions
-    "$image" fim-perms-set wayland,x11,pulseaudio,gpu,session_bus,input,usb
+    "$image" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
     # Compress image
-    FIM_COMPRESSION_DIRS="/usr" "$image" fim-compress
-
-    # Set up HOME
-    #shellcheck disable=2016
-    "$image" fim-config-set home '"${FIM_DIR_BINARY}"'
+    "$image" fim-commit
 
     # Create SHA for image
     sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
