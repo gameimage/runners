@@ -152,7 +152,9 @@ function main()
   compress_retroarch
 
   # Set environment variables
-  "$IMAGE" fim-env set 'PATH="/opt/retroarch/data/bin:$PATH"' 'FIM_BINARY_RETROARCH="/opt/retroarch/boot"'
+  "$IMAGE" fim-env set 'PATH="/opt/retroarch/data/bin:$PATH"' \
+    'FIM_BINARY_RETROARCH="/opt/retroarch/boot"' \
+    'HOME=/home/retroarch'
 
   # Set default command
   "$IMAGE" fim-boot '/opt/retroarch/boot'
