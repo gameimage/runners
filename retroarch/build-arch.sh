@@ -8,6 +8,8 @@
 # @description : 
 ######################################################################
 
+#shellcheck disable=2016
+
 set -e
 
 function msg()
@@ -64,21 +66,22 @@ function fetch_flatimage()
 {
   msg "${IMAGE:?IMAGE is undefined}"
 
-  # Fetch container
-  if ! [ -f "$BUILD_DIR/arch.tar.xz" ]; then
-    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-      | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+  if [[ -n "$1" ]]; then
+    cp "$1" "$IMAGE"
+  else
+    # Fetch container
+    if ! [ -f "$BUILD_DIR/arch.tar.xz" ]; then
+      wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
+        | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
+    fi
+
+    # Extract container
+    rm -f "$BUILD_DIR/arch.flatimage"
+    tar xf arch.tar.xz
   fi
 
-  # Extract container
-  rm -f "$BUILD_DIR/arch.flatimage"
-  tar xf arch.tar.xz
-
-  # FIM_COMPRESSION_LEVEL
-  export FIM_COMPRESSION_LEVEL=6
-
-  # Resize
-  "$IMAGE" fim-resize 3G
+  # Enable network
+  "$IMAGE" fim-perms set network
 
   # Update
   "$IMAGE" fim-root fakechroot pacman -Syu --noconfirm
@@ -98,8 +101,8 @@ function fetch_flatimage()
   "$IMAGE" fim-root fakechroot pacman -S libappindicator-gtk3 \
     lib32-libappindicator-gtk3 --noconfirm
 
-  # Compress self
-  "$IMAGE" fim-compress
+  # Commit changes
+  "$IMAGE" fim-commit
 }
 
 # Create dwarfs filesystems for retroarch and its assets
@@ -111,35 +114,17 @@ function compress_retroarch()
 
   # Include startup hook
   cp "$SCRIPT_DIR/boot.sh" "$RETROARCH_DIR"/boot
-
-  # Compress retroarch
-  "$IMAGE" fim-exec mkdwarfs \
-    -i "$RETROARCH_DIR" \
-    -o "$BUILD_DIR/retroarch.dwarfs"
-}
-
-function hooks_add()
-{
-  msg "${IMAGE:?Image is undefined}"
-  msg "${SCRIPT_DIR:?SCRIPT_DIR is undefined}"
-
-  "$IMAGE" fim-hook-add-pre "$SCRIPT_DIR"/hook-retroarch.sh
-}
-
-function configure_flatimage()
-{
-  msg "${IMAGE:?IMAGE is undefined}"
-
-  # Set default command
-  # shellcheck disable=2016
-  "$IMAGE" fim-cmd '"$FIM_BINARY_RETROARCH"'
-
-  # Set perms
-  "$IMAGE" fim-perms-set wayland,x11,pulseaudio,gpu,session_bus,input,usb
-
-  # Set up HOME
-  #shellcheck disable=2016
-  "$IMAGE" fim-config-set home '"${FIM_DIR_BINARY}"'
+  # Create layer dir
+  mkdir -p ./root/opt
+  # Move retroarch assets to retroarch home
+  mkdir -p ./root/home/retroarch
+  mv "$RETROARCH_DIR"/config ./root/home/retroarch/.config
+  # Move retroarch to layer dir
+  mv "$RETROARCH_DIR" ./root/opt
+  # Create retroarch layer
+  "$IMAGE" fim-layer create ./root ./retroarch.dwarfs
+  # Remove uncompressed files
+  rm -rf ./root
 }
 
 function main()
@@ -153,11 +138,27 @@ function main()
   # Container file path
   IMAGE="$BUILD_DIR/arch.flatimage"
 
+  # Retroarch
   fetch_retroarch
-  fetch_flatimage
+
+  # FlatImage
+  if [[ "$1" = "--flatimage" ]] && [[ -n "$2" ]]; then
+    fetch_flatimage "$2"
+  else
+    fetch_flatimage
+  fi
+
+  # Include retroarch in flatimage
   compress_retroarch
-  hooks_add
-  configure_flatimage
+
+  # Set environment variables
+  "$IMAGE" fim-env set 'PATH="/opt/retroarch/data/bin:$PATH"' 'FIM_BINARY_RETROARCH="/opt/retroarch/boot"'
+
+  # Set default command
+  "$IMAGE" fim-boot '/opt/retroarch/boot'
+
+  # Set perms
+  "$IMAGE" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
   # Rename
   mv "$IMAGE" retroarch.flatimage
