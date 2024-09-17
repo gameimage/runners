@@ -14,11 +14,11 @@ exec 1> >(sed "s/^/[$SCRIPT_NAME] /")
 exec 2> >(sed "s/^/[$SCRIPT_NAME] /" >&2)
 
 # PATH
-export PATH="/fim/mount/wine/bin:/usr/bin:/opt/wine/bin:$PATH"
+export PATH="/opt/wine/bin:/usr/bin:/opt/wine/bin:$PATH"
 
 # WINE env
 export USER="${WINEUSER:-gameimage}"
-export HOME=${WINEHOME:-"$FIM_DIR_HOST_CONFIG"/home}
+export HOME=/home/wine
 export WINEPREFIX="${WINEPREFIX:-"$HOME/Wine"}"
 export WINEDEBUG=${WINEDEBUG:-"-all"}
 

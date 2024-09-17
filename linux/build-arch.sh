@@ -8,6 +8,8 @@
 # @description : 
 ######################################################################
 
+#shellcheck disable=2016
+
 set -e
 
 function msg()
@@ -53,7 +55,7 @@ function fetch_flatimage()
     xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
 
   # Gameimage dependencies
-  "$IMAGE" fim-root fakechroot pacman -S libappindicator-gtk3 \
+  "$IMAGE" fim-root fakechroot pacman -S noto-fonts libappindicator-gtk3 \
     lib32-libappindicator-gtk3 --noconfirm
 
   # Game dependencies
@@ -109,7 +111,12 @@ function main()
   fi
 
   # Set perms
-  "$IMAGE" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+  "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+
+  # Set variables
+  "$IMAGE" fim-env set 'HOME=/home/linux' \
+    'XDG_CONFIG_HOME=/home/linux/.config' \
+    'XDG_DATA_HOME=/home/linux/.local/share'
 
   # Rename
   mv "$IMAGE" linux.flatimage

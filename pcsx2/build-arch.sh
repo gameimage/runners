@@ -88,7 +88,7 @@ function fetch_flatimage()
     xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
 
   # Gameimage dependencies
-  "$IMAGE" fim-root fakechroot pacman -S libappindicator-gtk3 \
+  "$IMAGE" fim-root fakechroot pacman -S noto-fonts libappindicator-gtk3 \
     lib32-libappindicator-gtk3 --noconfirm
 
   # Commit changes
@@ -162,7 +162,9 @@ function main()
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/pcsx2' \
     'PATH="/opt/pcsx2/bin:$PATH"' \
-    'FIM_BINARY_PCSX2="/opt/pcsx2/boot"'
+    'FIM_BINARY_PCSX2="/opt/pcsx2/boot"' \
+    'XDG_CONFIG_HOME=/home/pcsx2/.config' \
+    'XDG_DATA_HOME=/home/pcsx2/.local/share'
 
   # Compress changes
   compress_pcsx2
@@ -171,7 +173,7 @@ function main()
   "$IMAGE" fim-boot '/opt/pcsx2/boot'
 
   # Set perms
-  "$IMAGE" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+  "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
   package
 }

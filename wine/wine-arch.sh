@@ -35,7 +35,7 @@ function _create_base()
   "$image" fim-root fakechroot pacman -R wine --noconfirm
 
   # Gameimage dependencies
-  "$image" fim-root fakechroot pacman -S libappindicator-gtk3 lib32-libappindicator-gtk3 --noconfirm
+  "$image" fim-root fakechroot pacman -S noto-fonts libappindicator-gtk3 lib32-libappindicator-gtk3 --noconfirm
 }
 
 # Include winetricks
@@ -230,14 +230,18 @@ function main()
 
     # Set environment
     # shellcheck disable=2016
-    "$image" fim-env set 'PATH="/opt/wine/bin:$PATH"' 'FIM_BINARY_WINE="/opt/wine/bin/wine.sh"'
+    "$image" fim-env set 'PATH="/opt/wine/bin:$PATH"' \
+      'FIM_BINARY_WINE="/opt/wine/bin/wine.sh"' \
+      'HOME=/home/wine' \
+      'XDG_CONFIG_HOME=/home/wine/.config' \
+      'XDG_DATA_HOME=/home/wine/.local/share'
 
     # Set startup command
     # shellcheck disable=2016
     "$image" fim-boot /opt/wine/bin/wine.sh
 
     # Set permissions
-    "$image" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+    "$image" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
     # Compress image
     "$image" fim-commit

@@ -98,7 +98,7 @@ function fetch_flatimage()
     xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
 
   # Gameimage dependencies
-  "$IMAGE" fim-root fakechroot pacman -S libappindicator-gtk3 \
+  "$IMAGE" fim-root fakechroot pacman -S noto-fonts libappindicator-gtk3 \
     lib32-libappindicator-gtk3 --noconfirm
 
   # Commit changes
@@ -154,13 +154,15 @@ function main()
   # Set environment variables
   "$IMAGE" fim-env set 'PATH="/opt/retroarch/data/bin:$PATH"' \
     'FIM_BINARY_RETROARCH="/opt/retroarch/boot"' \
-    'HOME=/home/retroarch'
+    'HOME=/home/retroarch' \
+    'XDG_CONFIG_HOME=/home/retroarch/.config' \
+    'XDG_DATA_HOME=/home/retroarch/.local/share'
 
   # Set default command
   "$IMAGE" fim-boot '/opt/retroarch/boot'
 
   # Set perms
-  "$IMAGE" fim-perms set media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+  "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
   # Rename
   mv "$IMAGE" retroarch.flatimage
