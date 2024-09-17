@@ -113,6 +113,9 @@ function main()
   # Set perms
   "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
+  # Create directories
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/linux/{.config,.local/share}'
+
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/linux' \
     'XDG_CONFIG_HOME=/home/linux/.config' \

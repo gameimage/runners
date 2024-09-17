@@ -159,6 +159,9 @@ function main()
     fetch_flatimage
   fi
 
+  # Create directories
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/pcsx2/{.config,.local/share}'
+
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/pcsx2' \
     'PATH="/opt/pcsx2/bin:$PATH"' \

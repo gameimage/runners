@@ -160,6 +160,9 @@ function main()
   # Create novel layer
   compress_rpcs3
 
+  # Create directories
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/rpcs3/{.config,.local/share}'
+
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/rpcs3' \
     'PATH="/opt/rpcs3/bin:$PATH"' \

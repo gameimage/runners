@@ -151,6 +151,9 @@ function main()
   # Include retroarch in flatimage
   compress_retroarch
 
+  # Create directories
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/retroarch/{.config,.local/share}'
+
   # Set environment variables
   "$IMAGE" fim-env set 'PATH="/opt/retroarch/data/bin:$PATH"' \
     'FIM_BINARY_RETROARCH="/opt/retroarch/boot"' \

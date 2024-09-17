@@ -228,6 +228,9 @@ function main()
     # Remove /opt
     "$image" fim-exec rm -rf /opt
 
+    # Create directories
+    "$image" fim-exec sh -c 'mkdir -p /home/wine/{.config,.local/share}'
+
     # Set environment
     # shellcheck disable=2016
     "$image" fim-env set 'PATH="/opt/wine/bin:$PATH"' \
