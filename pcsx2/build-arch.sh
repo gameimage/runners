@@ -163,11 +163,11 @@ function main()
   "$IMAGE" fim-exec sh -c 'mkdir -p /home/pcsx2/{.config,.local/share}'
 
   # Set variables
-  "$IMAGE" fim-env set 'HOME=/home/pcsx2' \
+  "$IMAGE" fim-env set 'HOME=/home/gameimage' \
     'PATH="/opt/pcsx2/bin:$PATH"' \
     'FIM_BINARY_PCSX2="/opt/pcsx2/boot"' \
-    'XDG_CONFIG_HOME=/home/pcsx2/.config' \
-    'XDG_DATA_HOME=/home/pcsx2/.local/share'
+    'XDG_CONFIG_HOME=/home/gameimage/.config' \
+    'XDG_DATA_HOME=/home/gameimage/.local/share'
 
   # Compress changes
   compress_pcsx2

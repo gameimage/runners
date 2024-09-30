@@ -17,10 +17,8 @@ exec 2> >(sed "s/^/[$SCRIPT_NAME] /" >&2)
 export PATH="/opt/wine/bin:/usr/bin:/opt/wine/bin:$PATH"
 
 # WINE env
-export USER="${WINEUSER:-gameimage}"
-export HOME=/home/wine
-export WINEPREFIX="${WINEPREFIX:-"$HOME/Wine"}"
 export WINEDEBUG=${WINEDEBUG:-"-all"}
+export WINEPREFIX="${WINEPREFIX:?"Wine prefix is not defined"}"
 
 # DXVK env
 export DXVK_HUD=${DXVK_HUD:-"0"}

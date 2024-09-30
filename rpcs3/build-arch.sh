@@ -164,11 +164,11 @@ function main()
   "$IMAGE" fim-exec sh -c 'mkdir -p /home/rpcs3/{.config,.local/share}'
 
   # Set variables
-  "$IMAGE" fim-env set 'HOME=/home/rpcs3' \
+  "$IMAGE" fim-env set 'HOME=/home/gameimage' \
     'PATH="/opt/rpcs3/bin:$PATH"' \
     'FIM_BINARY_RPCS3="/opt/rpcs3/boot"'
-    'XDG_CONFIG_HOME=/home/rpcs3/.config' \
-    'XDG_DATA_HOME=/home/rpcs3/.local/share'
+    'XDG_CONFIG_HOME=/home/gameimage/.config' \
+    'XDG_DATA_HOME=/home/gameimage/.local/share'
 
   # Set default command
   "$IMAGE" fim-boot '/opt/rpcs3/boot'

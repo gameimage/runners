@@ -117,9 +117,9 @@ function main()
   "$IMAGE" fim-exec sh -c 'mkdir -p /home/linux/{.config,.local/share}'
 
   # Set variables
-  "$IMAGE" fim-env set 'HOME=/home/linux' \
-    'XDG_CONFIG_HOME=/home/linux/.config' \
-    'XDG_DATA_HOME=/home/linux/.local/share'
+  "$IMAGE" fim-env set 'HOME=/home/gameimage' \
+    'XDG_CONFIG_HOME=/home/gameimage/.config' \
+    'XDG_DATA_HOME=/home/gameimage/.local/share'
 
   # Rename
   mv "$IMAGE" linux.flatimage

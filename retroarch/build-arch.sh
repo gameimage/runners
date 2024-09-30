@@ -157,9 +157,9 @@ function main()
   # Set environment variables
   "$IMAGE" fim-env set 'PATH="/opt/retroarch/data/bin:$PATH"' \
     'FIM_BINARY_RETROARCH="/opt/retroarch/boot"' \
-    'HOME=/home/retroarch' \
-    'XDG_CONFIG_HOME=/home/retroarch/.config' \
-    'XDG_DATA_HOME=/home/retroarch/.local/share'
+    'HOME=/home/gameimage' \
+    'XDG_CONFIG_HOME=/home/gameimage/.config' \
+    'XDG_DATA_HOME=/home/gameimage/.local/share'
 
   # Set default command
   "$IMAGE" fim-boot '/opt/retroarch/boot'
