@@ -71,21 +71,21 @@ function fetch_flatimage()
   "$IMAGE" fim-perms set network
 
   # Update
-  "$IMAGE" fim-root fakechroot pacman -Syu --noconfirm
+  "$IMAGE" fim-root pacman -Syu --noconfirm
 
   # Install dependencies
-  "$IMAGE" fim-root fakechroot pacman -S libxkbcommon libxkbcommon-x11 \
+  "$IMAGE" fim-root pacman -S libxkbcommon libxkbcommon-x11 \
     lib32-libxkbcommon lib32-libxkbcommon-x11 libsm lib32-libsm fontconfig \
     libxinerama lib32-libxinerama \
     lib32-fontconfig noto-fonts --noconfirm
 
   # Install video packages
-  "$IMAGE" fim-root fakechroot pacman -S xorg-server mesa lib32-mesa \
+  "$IMAGE" fim-root pacman -S xorg-server mesa lib32-mesa \
     glxinfo pcre xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon \
     xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
 
   # Gameimage dependencies
-  "$IMAGE" fim-root fakechroot pacman -S noto-fonts libappindicator-gtk3 \
+  "$IMAGE" fim-root pacman -S noto-fonts libappindicator-gtk3 \
     lib32-libappindicator-gtk3 --noconfirm
 
   # Commit changes

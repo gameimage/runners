@@ -8,13 +8,9 @@
 # @description : 
 ######################################################################
 
-set -e
+set -xe
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPT_NAME="$(basename "$0")"
-
-exec 1> >(while IFS= read -r line; do echo "-- [$SCRIPT_NAME $(date +%H:%M:%S)] $line"; done)
-exec 2> >(while IFS= read -r line; do echo "-- [$SCRIPT_NAME $(date +%H:%M:%S)] $line" >&2; done)
 
 # Set global vars
 # export FIM_DEBUG=1
@@ -26,16 +22,16 @@ function _create_base()
   local image="$1"
 
   # Update
-  "$image" fim-root fakechroot pacman -Syu --noconfirm
+  "$image" fim-root pacman -Syu --noconfirm
 
   # Install wine dependencies
-  "$image" fim-root fakechroot pacman -S wine xorg-server libxinerama lib32-libxinerama \
+  "$image" fim-root pacman -S wine xorg-server libxinerama lib32-libxinerama \
     mesa lib32-mesa glxinfo lib32-gcc-libs \
     gcc-libs pcre freetype2 lib32-freetype2 --noconfirm
-  "$image" fim-root fakechroot pacman -R wine --noconfirm
+  "$image" fim-root pacman -R wine --noconfirm
 
   # Gameimage dependencies
-  "$image" fim-root fakechroot pacman -S noto-fonts libappindicator-gtk3 lib32-libappindicator-gtk3 --noconfirm
+  "$image" fim-root pacman -S noto-fonts libappindicator-gtk3 lib32-libappindicator-gtk3 --noconfirm
 }
 
 # Include winetricks
@@ -44,20 +40,11 @@ function _include_winetricks()
 {
   local image="$1"
 
-  "$image" fim-root fakechroot pacman -S cabextract --noconfirm
+  "$image" fim-root pacman -S cabextract --noconfirm
 
   wget -q --show-progress --progress=dot \
     "https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks" \
     -O winetricks
-
-  # Wait for wineserver to finish before script exit
-  # shellcheck disable=2016
-  { sed -E 's/^\s+://' | tee -a winetricks &>/dev/null; } <<-"END"
-  :while pgrep -f "/tmp/fim/dwarfs/$DWARFS_SHA/.*/wineserver" &>/dev/null; do
-  :  echo "Waiting for wineserver to finish..."
-  :  sleep .5
-  :done
-	END
 
   "$image" fim-exec cp ./winetricks /usr/bin/winetricks
   "$image" fim-exec chmod +x /usr/bin/winetricks
@@ -69,7 +56,7 @@ function _include_amd()
 {
   local image="$1"
 
-  "$image" fim-root fakechroot pacman -S xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon vulkan-tools --noconfirm
+  "$image" fim-root pacman -S xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon vulkan-tools --noconfirm
 }
 
 # Include intel video drivers in image
@@ -78,10 +65,10 @@ function _include_intel()
 {
   local image="$1"
 
-  "$image" fim-root fakechroot pacman -S xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
+  "$image" fim-root pacman -S xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
 }
 
-# Create dwarfs files for wine distributions
+# Create compressed files for wine distributions
 function _package_wine_dists()
 {
   local image="$1"
@@ -163,14 +150,14 @@ function _package_wine_dists()
     cp "$SCRIPT_DIR"/wine.sh ./root/opt/wine/bin/wine.sh
 
     # Compress files
-    "$image" fim-exec mkdwarfs -f -i ./root -o ./"${dist_wine}".dwarfs
+    "$image" fim-layer create ./root ./"${dist_wine}".layer -comp zstd
 
     # Remove temporary directory
     rm -rf ./wine
   done
 
   # Create ssha
-  for i in *.dwarfs; do
+  for i in *.layer; do
     sha256sum "$i" > "$i.sha256sum"
   done
 
@@ -226,7 +213,7 @@ function main()
     _include_winetricks "$image"
 
     # Remove /opt
-    "$image" fim-exec rm -rf /opt
+    # "$image" fim-exec rm -rf /opt
 
     # Create directories
     "$image" fim-exec sh -c 'mkdir -p /home/wine/{.config,.local/share}'
@@ -235,9 +222,15 @@ function main()
     # shellcheck disable=2016
     "$image" fim-env set 'PATH="/opt/wine/bin:$PATH"' \
       'FIM_BINARY_WINE="/opt/wine/bin/wine.sh"' \
-      'HOME=/home/wine' \
-      'XDG_CONFIG_HOME=/home/wine/.config' \
-      'XDG_DATA_HOME=/home/wine/.local/share'
+      'USER=gameimage' \
+      'HOME=/home/gameimage' \
+      'XDG_CONFIG_HOME=/home/gameimage/.config' \
+      'XDG_DATA_HOME=/home/gameimage/.local/share'
+
+    # shellcheck disable=2016
+    # There is a problem with wine running on overlayfs with bwrap, it works
+    # when the filesystem is bound directly (instead of acessing throught overlayfs)
+    "$image" fim-bind add ro '$FIM_DIR_MOUNT/layers/2/opt/wine' /opt/wine
 
     # Set startup command
     # shellcheck disable=2016
@@ -246,7 +239,7 @@ function main()
     # Set permissions
     "$image" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
-    # Compress image
+    # Commit configurations
     "$image" fim-commit
 
     # Create SHA for image
@@ -272,8 +265,8 @@ function main()
     # Create wine dists
     _package_wine_dists "$image"
 
-    ## Move dwarfs to dist
-    mv ./*.dwarfs ../dist
+    ## Move layer to dist
+    mv ./*.layer ../dist
     ## Move sha to dist
     mv ./*.sha256sum ../dist
   fi
