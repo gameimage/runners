@@ -108,7 +108,7 @@ function compress_pcsx2()
   # Move pcsx2 to layer dir
   mv "$PCSX2_DIR" ./root/opt
   # Compress pcsx2
-  "$IMAGE" fim-layer create ./root pcsx2.dwarfs
+  "$IMAGE" fim-layer create ./root pcsx2.layer
   # Remove uncompressed files
   rm -rf ./root
 }
@@ -124,19 +124,11 @@ function package()
 
   # Move binaries to dist dir
   mv "$BUILD_DIR"/arch.flatimage pcsx2.flatimage
-  mv "$BUILD_DIR"/pcsx2.dwarfs .
-
-  # Compress
-  tar -cf pcsx2.tar pcsx2.flatimage
-  xz -3zv pcsx2.tar
+  mv "$BUILD_DIR"/pcsx2.layer .
 
   # Create sha256sum
   sha256sum pcsx2.flatimage > pcsx2.flatimage.sha256sum
-  sha256sum pcsx2.tar.xz > pcsx2.tar.xz.sha256sum
-  sha256sum pcsx2.dwarfs > pcsx2.dwarfs.sha256sum
-
-  # Only distribute tarball
-  rm pcsx2.flatimage
+  sha256sum pcsx2.layer > pcsx2.layer.sha256sum
 }
 
 function main()
@@ -160,7 +152,8 @@ function main()
   fi
 
   # Create directories
-  "$IMAGE" fim-exec sh -c 'mkdir -p /home/pcsx2/{.config,.local/share}'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.config'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
 
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/gameimage' \
@@ -177,6 +170,9 @@ function main()
 
   # Set perms
   "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+
+  # Save changes
+  "$IMAGE" fim-commit
 
   package
 }

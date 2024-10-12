@@ -105,7 +105,7 @@ function fetch_flatimage()
   "$IMAGE" fim-commit
 }
 
-# Create dwarfs filesystems for retroarch and its assets
+# Create layer filesystems for retroarch and its assets
 function compress_retroarch()
 {
   msg "${BUILD_DIR:?BUILD_DIR is undefined}"
@@ -116,13 +116,13 @@ function compress_retroarch()
   cp "$SCRIPT_DIR/boot.sh" "$RETROARCH_DIR"/boot
   # Create layer dir
   mkdir -p ./root/opt
-  # Move retroarch assets to retroarch home
-  mkdir -p ./root/home/retroarch
-  mv "$RETROARCH_DIR"/config ./root/home/retroarch/.config
+  # Move retroarch assets to gameimage home
+  mkdir -p ./root/home/gameimage
+  mv "$RETROARCH_DIR"/config ./root/home/gameimage/.config
   # Move retroarch to layer dir
   mv "$RETROARCH_DIR" ./root/opt
   # Create retroarch layer
-  "$IMAGE" fim-layer create ./root ./retroarch.dwarfs
+  "$IMAGE" fim-layer create ./root ./retroarch.layer
   # Remove uncompressed files
   rm -rf ./root
 }
@@ -152,7 +152,8 @@ function main()
   compress_retroarch
 
   # Create directories
-  "$IMAGE" fim-exec sh -c 'mkdir -p /home/retroarch/{.config,.local/share}'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.config'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
 
   # Set environment variables
   "$IMAGE" fim-env set 'PATH="/opt/retroarch/data/bin:$PATH"' \
@@ -167,6 +168,9 @@ function main()
   # Set perms
   "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
+  # Save changes
+  "$IMAGE" fim-commit
+
   # Rename
   mv "$IMAGE" retroarch.flatimage
 
@@ -175,22 +179,15 @@ function main()
 
   # Move to-be-released files
   mv retroarch.flatimage ../dist
-  mv retroarch.dwarfs ../dist
+  mv retroarch.layer ../dist
 
   # Enter dist dir
   cd ../dist
-
-  # Create compressed archive
-  tar -cf retroarch.tar retroarch.flatimage
-  xz -0zv retroarch.tar
 
   # Create checksum for everything
   for i in *; do
     sha256sum "$i" > "${i}.sha256sum"
   done
-
-  # Only release tarball
-  rm retroarch.flatimage
 }
 
 main "$@"

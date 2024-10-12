@@ -104,7 +104,7 @@ function compress_rpcs3()
   # Move rpcs3 to layer dir
   mv "$RPCS3_DIR" ./root/opt
   # Compress rpcs3
-  "$IMAGE" fim-layer create ./root "$BUILD_DIR/rpcs3.dwarfs"
+  "$IMAGE" fim-layer create ./root "$BUILD_DIR/rpcs3.layer"
   # Remove uncompressed files
   rm -rf ./root
 }
@@ -120,19 +120,11 @@ function package()
 
   # Move binaries to dist dir
   mv "$BUILD_DIR"/arch.flatimage rpcs3.flatimage
-  mv "$BUILD_DIR"/rpcs3.dwarfs .
-
-  # Compress
-  tar -cf rpcs3.tar rpcs3.flatimage
-  xz -3zv rpcs3.tar
+  mv "$BUILD_DIR"/rpcs3.layer .
 
   # Create sha256sum
   sha256sum rpcs3.flatimage > rpcs3.flatimage.sha256sum
-  sha256sum rpcs3.tar.xz > rpcs3.tar.xz.sha256sum
-  sha256sum rpcs3.dwarfs > rpcs3.dwarfs.sha256sum
-
-  # Only distribute tarball
-  rm rpcs3.flatimage
+  sha256sum rpcs3.layer > rpcs3.layer.sha256sum
 }
 
 function main()
@@ -161,12 +153,13 @@ function main()
   compress_rpcs3
 
   # Create directories
-  "$IMAGE" fim-exec sh -c 'mkdir -p /home/rpcs3/{.config,.local/share}'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.config'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
 
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/gameimage' \
     'PATH="/opt/rpcs3/bin:$PATH"' \
-    'FIM_BINARY_RPCS3="/opt/rpcs3/boot"'
+    'FIM_BINARY_RPCS3="/opt/rpcs3/boot"' \
     'XDG_CONFIG_HOME=/home/gameimage/.config' \
     'XDG_DATA_HOME=/home/gameimage/.local/share'
 
@@ -175,6 +168,9 @@ function main()
 
   # Set perms
   "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+
+  # Save changes
+  "$IMAGE" fim-commit
 
   package
 }

@@ -110,16 +110,17 @@ function main()
     fetch_flatimage
   fi
 
-  # Set perms
-  "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
-
   # Create directories
-  "$IMAGE" fim-exec sh -c 'mkdir -p /home/linux/{.config,.local/share}'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.config'
+  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
 
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/gameimage' \
     'XDG_CONFIG_HOME=/home/gameimage/.config' \
     'XDG_DATA_HOME=/home/gameimage/.local/share'
+
+  # Set perms
+  "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
   # Rename
   mv "$IMAGE" linux.flatimage
@@ -133,17 +134,10 @@ function main()
   # Enter dist dir
   cd ../dist
 
-  # Create compressed archive
-  tar -cf linux.tar linux.flatimage
-  xz -0zv linux.tar
-
   # Create checksum for everything
   for i in *; do
     sha256sum "$i" > "${i}.sha256sum"
   done
-
-  # Only release tarball
-  rm linux.flatimage
 }
 
 main "$@"
