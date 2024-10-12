@@ -254,7 +254,8 @@ function main()
     # "$image" fim-exec rm -rf /opt
 
     # Create directories
-    "$image" fim-exec sh -c 'mkdir -p /home/wine/{.config,.local/share}'
+    "$image" fim-exec sh -c 'mkdir -p /home/gameimage/.config'
+    "$image" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
 
     # Set environment
     # shellcheck disable=2016
