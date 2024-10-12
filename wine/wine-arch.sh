@@ -25,13 +25,16 @@ function _create_base()
   "$image" fim-root pacman -Syu --noconfirm
 
   # Install wine dependencies
-  "$image" fim-root pacman -S wine xorg-server libxinerama lib32-libxinerama \
+  "$image" fim-root pacman -S --noconfirm wine xorg-server libxinerama lib32-libxinerama \
     mesa lib32-mesa glxinfo lib32-gcc-libs \
-    gcc-libs pcre freetype2 lib32-freetype2 --noconfirm
-  "$image" fim-root pacman -R wine --noconfirm
+    gcc-libs pcre freetype2 lib32-freetype2
+  "$image" fim-root pacman -R --noconfirm wine
 
   # Gameimage dependencies
-  "$image" fim-root pacman -S noto-fonts libappindicator-gtk3 lib32-libappindicator-gtk3 --noconfirm
+  "$image" fim-root pacman -S --noconfirm noto-fonts libappindicator-gtk3 lib32-libappindicator-gtk3
+
+  # Wine UMU
+  "$image" fim-root pacman -S --noconfirm python python-xlib python-filelock
 }
 
 # Include winetricks
@@ -68,6 +71,31 @@ function _include_intel()
   "$image" fim-root pacman -S xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
 }
 
+function _build_umu()
+{
+  # Download proton
+  wget -O ./"proton.tar.gz" "$1"
+  # Create proton directory
+  mkdir -p ./root/opt/wine/bin/
+  # Extract proton to proton directory
+  tar xf ./"proton.tar.gz" --strip-components=1 -C ./root/opt/wine
+  # Copy boot script
+  cp "$SCRIPT_DIR"/wine.sh ./root/opt/wine/bin/wine.sh
+  # Download UMU
+  wget -Oumu.deb "$2"
+  # Extract binaries from deb
+  ar x "umu.deb" data.tar.zst
+  # Remove deb
+  rm umu.deb
+  # Extract binaries from data tarball
+  # This extracts the /usr dir
+  tar xf data.tar.zst -C ./root
+  # Remove data tarball
+  rm data.tar.zst
+  # Create novel layer
+  "$image" fim-layer create ./root wine.umu.ge.layer
+}
+
 # Create compressed files for wine distributions
 function _package_wine_dists()
 {
@@ -76,13 +104,14 @@ function _package_wine_dists()
   local link_wine
 
   declare -a wine_dists=(
-    "caffe"
-    "vaniglia"
-    "soda"
-    "ge"
-    "staging"
-    "tkg"
-    "osu-tkg"
+    # "caffe"
+    # "vaniglia"
+    # "soda"
+    # "ge"
+    "umu"
+    # "staging"
+    # "tkg"
+    # "osu-tkg"
   )
 
   for dist_wine in "${wine_dists[@]}"; do
@@ -99,6 +128,14 @@ function _package_wine_dists()
         link_wine="$(curl -H "Accept: application/vnd.github+json" \
           https://api.github.com/repos/GloriousEggroll/wine-ge-custom/releases/latest 2>/dev/null \
           | jq -e -r '.assets.[].browser_download_url | match(".*.tar.xz").string')"
+      ;;
+      "umu")
+        link_umu="$(curl -H "Accept: application/vnd.github+json" \
+          https://api.github.com/repos/Open-Wine-Components/umu-launcher/releases/latest 2>/dev/null \
+          | jq -e -r '.assets.[].browser_download_url | match(".*python3-umu.*.deb").string')"
+        link_wine="$(curl -H "Accept: application/vnd.github+json" \
+          https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest 2>/dev/null \
+          | jq -e -r '.assets.[].browser_download_url | match(".*GE-Proton.*.tar.gz").string')"
       ;;
       "staging")
         link_wine="$(curl -H "Accept: application/vnd.github+json" \
@@ -121,7 +158,14 @@ function _package_wine_dists()
           | sort -V | tail -n1)"
       ;;
     esac
+
     echo "link_wine: ${link_wine}"
+
+    # Use alternate build process for umu
+    if [[ "$dist_wine" = "umu" ]]; then
+      _build_umu "$link_wine" "$link_umu"
+      continue
+    fi
 
     # Parse filename
     # shellcheck disable=2155
@@ -150,7 +194,7 @@ function _package_wine_dists()
     cp "$SCRIPT_DIR"/wine.sh ./root/opt/wine/bin/wine.sh
 
     # Compress files
-    "$image" fim-layer create ./root ./"${dist_wine}".layer -comp zstd
+    "$image" fim-layer create ./root ./wine."${dist_wine}".layer -comp zstd
 
     # Remove temporary directory
     rm -rf ./wine
@@ -176,7 +220,7 @@ function main()
   export FIM_FIFO="0"
 
   # shellcheck disable=2155
-  local basename_image=base.flatimage
+  local basename_image=wine.flatimage
   local image="$SCRIPT_DIR/build/$basename_image"
 
   # Fetch
@@ -245,15 +289,8 @@ function main()
     # Create SHA for image
     sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
 
-    # Include image in tarball
-    tar -cf "${basename_image}.tar" "$basename_image"
-    xz -z3v "${basename_image}.tar" 
-
-    # Create SHA for tarball
-    sha256sum "${basename_image}.tar.xz" > ../dist/"${basename_image}.tar.xz.sha256sum"
-
-    # Release tarball
-    mv "${basename_image}.tar.xz" ../dist
+    # Release image
+    mv "${basename_image}" ../dist
 
   else
     # Check for image

@@ -14,7 +14,12 @@ exec 1> >(sed "s/^/[$SCRIPT_NAME] /")
 exec 2> >(sed "s/^/[$SCRIPT_NAME] /" >&2)
 
 # PATH
-export PATH="/opt/wine/bin:/usr/bin:/opt/wine/bin:$PATH"
+export PATH="/opt/wine/bin:/usr/bin:/opt/wine/files/bin/:$PATH"
+
+# WINE UMU
+export PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
+export PROTONPATH="/opt/wine"
+export GAMEID="${GAMEID:-gameimage}"
 
 # WINE env
 export WINEDEBUG=${WINEDEBUG:-"-all"}
@@ -40,6 +45,10 @@ mkdir -p "$WINEPREFIX"
 # Create wine HOME
 mkdir -p "$HOME"
 
+# Set user
+# Bubblewrap can only have one user
+echo "gameimage:x:$(id -u):$(id -g)::/home/gameimage:/usr/bin/bash" > /etc/passwd
+
 # Check gpu vendor and device
 if command -v glxinfo &>/dev/null && command -v pcregrep &>/dev/null; then
   glxinfo -B &>"$WINEPREFIX/glxinfo.log"
@@ -62,7 +71,7 @@ fi
 # Check for wine binary
 if ! command -v wine; then
   echo "Binary 'wine' not found or is not a regular file"
-  exit
+  exit 1
 fi
 
 # Display wine version
@@ -91,6 +100,13 @@ if [[ "$1" = "winetricks" ]]; then
   2>&1 winetricks -f "$@" | tee "$WINEPREFIX/winetricks.log"
   echo "Winetricks log  : $WINEPREFIX/winetricks.log"
 else
-  2>&1 wine "$@" | tee "$WINEPREFIX/wine.log"
   echo "Wine log  : $WINEPREFIX/wine.log"
+  # Try to use umu if exists
+  if command -v umu-run; then
+    echo "Using 'umu-run'"
+    2>&1 umu-run "$@" | tee "$WINEPREFIX/wine.log"
+  else
+    echo "Using 'wine'"
+    2>&1 wine "$@" | tee "$WINEPREFIX/wine.log"
+  fi
 fi
