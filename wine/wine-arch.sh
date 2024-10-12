@@ -107,7 +107,6 @@ function _package_wine_dists()
     # "caffe"
     # "vaniglia"
     # "soda"
-    # "ge"
     "umu"
     # "staging"
     # "tkg"
@@ -123,11 +122,6 @@ function _package_wine_dists()
           sed -e '/cx/d' |
           sort -V |
           tail -n1)"
-      ;;
-      "ge")
-        link_wine="$(curl -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/GloriousEggroll/wine-ge-custom/releases/latest 2>/dev/null \
-          | jq -e -r '.assets.[].browser_download_url | match(".*.tar.xz").string')"
       ;;
       "umu")
         link_umu="$(curl -H "Accept: application/vnd.github+json" \
