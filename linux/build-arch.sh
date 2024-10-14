@@ -116,11 +116,15 @@ function main()
 
   # Set variables
   "$IMAGE" fim-env set 'HOME=/home/gameimage' \
+    'USER=gameimage' \
     'XDG_CONFIG_HOME=/home/gameimage/.config' \
     'XDG_DATA_HOME=/home/gameimage/.local/share'
 
   # Set perms
   "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+
+  # Commit to novel layer
+  "$IMAGE" fim-commit
 
   # Rename
   mv "$IMAGE" linux.flatimage
