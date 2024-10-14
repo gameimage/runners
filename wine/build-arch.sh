@@ -104,13 +104,13 @@ function _package_wine_dists()
   local link_wine
 
   declare -a wine_dists=(
-    # "caffe"
-    # "vaniglia"
-    # "soda"
+    "caffe"
+    "vaniglia"
+    "soda"
     "umu"
-    # "staging"
-    # "tkg"
-    # "osu-tkg"
+    "staging"
+    "tkg"
+    "osu-tkg"
   )
 
   for dist_wine in "${wine_dists[@]}"; do
