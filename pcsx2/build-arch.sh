@@ -58,16 +58,9 @@ function fetch_flatimage()
   if [[ -n "$1" ]]; then
     cp "$1" "$IMAGE"
   else
-    # Fetch container
-    if ! [ -f "$BUILD_DIR/arch.tar.xz" ]; then
-      wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-        | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
-    fi
-
-    # Extract container
-    rm -f "$IMAGE"
-
-    tar xf arch.tar.xz
+    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
+      | jq -r '.assets.[].browser_download_url | match(".*arch.flatimage$").string')"
+    chmod +x "$IMAGE"
   fi
 
   # Enable network

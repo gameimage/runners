@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: linux
+name: default
 on:
   workflow_dispatch:
   # Build every 7 days
@@ -9,14 +9,21 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        runner: [ linux, pcsx2, rpcs3, retroarch, wine ]
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - name: Create linux package
+    - name: Create package
       run: |
+        mkdir -p dist
+        # For wine
+        export BASE_CREATE=1
+        export LAYER_CREATE=1
         # Install tools
         sudo apt install -y jq wget tar xz-utils pv git pcregrep
         # Custom packages
@@ -26,9 +33,12 @@ jobs:
           https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64
         chmod +x ./bin/*
         # Build packages
-        ( HOME="$(pwd)" FIM_DEBUG=1 FIM_FIFO=0 ./linux/build-arch.sh )
-        # Grab dist folder
-        mv ./linux/dist .
+        ( HOME="$(pwd)" FIM_DEBUG=1 ./${{ matrix.runner }}/build-arch.sh )
+        # Move dist contents to release folder
+        mv ./${{ matrix.runner }}/dist/* ./dist
+        # Clear directories
+        rm -rf ./${{ matrix.runner }}/dist
+        rm -rf ./${{ matrix.runner }}/build
 
     - name: Set permissions for dist directory
       run: |
@@ -36,10 +46,10 @@ jobs:
         sudo chmod -R 766 dist/
 
     - name: Upload artifact to release
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v3
       with:
         name: artifacts_build
-        path: 'dist'
+        path: dist
 
     - name: Compute Short SHA
       id: ssha
@@ -55,17 +65,18 @@ jobs:
       runs-on: ubuntu-latest
 
       steps:
-        - uses: actions/download-artifact@v1
+        - uses: actions/download-artifact@v3
           with:
             name: artifacts_build
+            path: dist
 
         - name: release
           uses: marvinpinto/action-automatic-releases@latest
           with:
-            title: continuous-linux-gnu-x86_64
-            automatic_release_tag: linux-gnu-x86_64
+            title: continuous gameimage-1.4.x
+            automatic_release_tag: gameimage-1.4.x
             prerelease: false
             draft: false
             files: |
-              artifacts_build
+              dist/*
             repo_token: ${{ secrets.GITHUB_TOKEN }}

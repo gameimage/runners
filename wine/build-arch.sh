@@ -194,11 +194,6 @@ function _package_wine_dists()
     rm -rf ./wine
   done
 
-  # Create ssha
-  for i in *.layer; do
-    sha256sum "$i" > "$i.sha256sum"
-  done
-
 }
 
 function main()
@@ -222,20 +217,11 @@ function main()
     [[ -z "$2" ]] && { echo "Please specify image path"; exit 1; }
     cp "$2" "$image"
   else
-    local tarball="arch.tar.xz"
-    if [[ ! -f "$tarball" ]]; then
-      wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-        | jq -r '.assets.[].browser_download_url | match(".*arch.tar.xz$").string')"
-    fi
-
-    # Uncompress
-    if [[ ! -f "arch.flatimage" ]]; then
-      { pv -nf "$tarball" | tar xJ; } 2>&1 | xargs -I{} echo '[decompress %] {}'
-      rm "$tarball"
-    fi
-
+    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
+      | jq -r '.assets.[].browser_download_url | match(".*arch.flatimage$").string')"
     # Set image name
     cp ./"arch.flatimage" "$image"
+    chmod +x "$image"
   fi
 
   # Enable only home and network
@@ -281,13 +267,9 @@ function main()
     # Commit configurations
     "$image" fim-commit
 
-    # Create SHA for image
-    sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
+  fi
 
-    # Release image
-    mv "${basename_image}" ../dist
-
-  else
+  if [[ -v LAYER_CREATE ]]; then
     # Check for image
     if [ ! -f "$image" ]; then
       echo "Could not find image '$image'"
@@ -296,12 +278,19 @@ function main()
 
     # Create wine dists
     _package_wine_dists "$image"
-
-    ## Move layer to dist
-    mv ./*.layer ../dist
-    ## Move sha to dist
-    mv ./*.sha256sum ../dist
   fi
+
+  # Create ssha
+  for i in *.layer; do
+    sha256sum "$i" > "$i.sha256sum"
+  done
+  sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
+  # Release image
+  mv ./"${basename_image}" ../dist
+  ## Move layer to dist
+  mv ./*.layer ../dist
+  ## Move sha to dist
+  mv ./*.sha256sum ../dist
 }
 
 main "$@"
