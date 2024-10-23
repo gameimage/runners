@@ -81,16 +81,21 @@ function _build_umu()
   # Copy boot script
   cp "$SCRIPT_DIR"/wine.sh ./root/opt/wine/bin/wine.sh
   # Download UMU
-  wget -Oumu.deb "$2"
+  wget -Oumu.zip "$2"
+  # Extract deb from zip file
+  unzip umu.zip
+  # Cleanup
+  rm umu.zip umu-launcher*.deb
+  mv python3*.deb umu.deb
   # Extract binaries from deb
-  ar x "umu.deb" data.tar.zst
+  ar x "umu.deb" data.tar.xz
   # Remove deb
   rm umu.deb
   # Extract binaries from data tarball
   # This extracts the /usr dir
-  tar xf data.tar.zst -C ./root
+  tar xf data.tar.xz -C ./root
   # Remove data tarball
-  rm data.tar.zst
+  rm data.tar.xz
   # Create novel layer
   "$image" fim-layer create ./root wine.umu.ge.layer
 }
@@ -125,7 +130,7 @@ function _package_wine_dists()
       "umu")
         link_umu="$(curl -H "Accept: application/vnd.github+json" \
           https://api.github.com/repos/Open-Wine-Components/umu-launcher/releases/latest 2>/dev/null \
-          | jq -e -r '.assets.[].browser_download_url | match(".*python3-umu.*.deb").string')"
+          | jq -e -r '.assets.[].browser_download_url | match(".*Debian.*.zip").string')"
         link_wine="$(curl -H "Accept: application/vnd.github+json" \
           https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest 2>/dev/null \
           | jq -e -r '.assets.[].browser_download_url | match(".*GE-Proton.*.tar.gz").string')"
@@ -266,6 +271,10 @@ function main()
     # Commit configurations
     "$image" fim-commit
 
+    # Create SHA
+    sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
+    # Release image
+    cp ./"${basename_image}" ../dist
   fi
 
   if [[ -v LAYER_CREATE ]]; then
@@ -274,22 +283,15 @@ function main()
       echo "Could not find image '$image'"
       exit 1
     fi
-
     # Create wine dists
     _package_wine_dists "$image"
+    # Create ssha
+    for i in *.layer; do
+      sha256sum "$i" > ../dist/"$i.sha256sum"
+    done
+    # Move layer to dist
+    cp ./*.layer ../dist
   fi
-
-  # Create ssha
-  for i in *.layer; do
-    sha256sum "$i" > "$i.sha256sum"
-  done
-  sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
-  # Release image
-  mv ./"${basename_image}" ../dist
-  ## Move layer to dist
-  mv ./*.layer ../dist
-  ## Move sha to dist
-  mv ./*.sha256sum ../dist
 }
 
 main "$@"
