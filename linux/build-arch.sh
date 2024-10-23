@@ -55,7 +55,8 @@ function fetch_flatimage()
   # Game dependencies
   declare -a GAME_DEPS=(
     # General linux audio
-    pipewire-pulse lib32-pipewire pipewire-alsa wireplumber alsa-plugins
+    lib32-pipewire pipewire-alsa wireplumber alsa-plugins
+    lib32-libpulse pulseaudio-{alsa,equalizer,jack,lirc,zeroconf}
     # GOG Mojo setup & also Trine enchanted edition
     gtk2 lib32-gtk2
     # Amnesia A Machine For Pigs
@@ -72,7 +73,7 @@ function fetch_flatimage()
     libpng lib32-libpng libpng12 lib32-libpng12 xorg-xwininfo ffmpeg 
   )
 
-  "$IMAGE" fim-root pacman -Rs --noconfirm jack2 lib32-jack2
+  "$IMAGE" fim-root pacman -Rs --noconfirm pipewire-pulse
   "$IMAGE" fim-root pacman -S --noconfirm "${GAME_DEPS[@]}"
 
   # Workarounds
