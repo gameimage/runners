@@ -26,7 +26,8 @@ function _create_base()
 
   # Install wine dependencies
   "$image" fim-root pacman -S --noconfirm wine xorg-server libxinerama lib32-libxinerama \
-    mesa lib32-mesa glxinfo lib32-gcc-libs gcc-libs pcre freetype2 lib32-freetype2 wget aria2
+    mesa lib32-mesa glxinfo lib32-gcc-libs gcc-libs pcre freetype2 lib32-freetype2 wget aria2 \
+    zenity gst-libav gst-plugins-{bad,base,good,ugly} lib32-gst-plugins-{base,good}
   "$image" fim-root pacman -R --noconfirm wine
 
   # Gameimage dependencies
