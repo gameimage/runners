@@ -9,9 +9,6 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        runner: [ linux, pcsx2, rpcs3, retroarch, wine ]
     runs-on: ubuntu-latest
 
     steps:
