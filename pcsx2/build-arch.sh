@@ -51,44 +51,6 @@ function fetch_pcsx2()
 }
 
 
-function fetch_flatimage()
-{
-  msg "${BUILD_DIR:?BUILD_DIR is undefined}"
-
-  if [[ -n "$1" ]]; then
-    cp "$1" "$IMAGE"
-  else
-    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-      | jq -r '.assets.[].browser_download_url | match(".*arch.flatimage$").string')"
-    chmod +x "$IMAGE"
-  fi
-
-  # Enable network
-  "$IMAGE" fim-perms set network
-
-  # Update
-  "$IMAGE" fim-root pacman -Syu --noconfirm
-
-  # Install dependencies
-  "$IMAGE" fim-root pacman -S libxkbcommon libxkbcommon-x11 \
-    lib32-libxkbcommon lib32-libxkbcommon-x11 libsm lib32-libsm fontconfig \
-    libxinerama lib32-libxinerama \
-    lib32-fontconfig noto-fonts --noconfirm
-
-  # Install video packages
-  "$IMAGE" fim-root pacman -S xorg-server mesa lib32-mesa \
-    glxinfo pcre xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon \
-    xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
-
-  # Gameimage dependencies
-  "$IMAGE" fim-root pacman -S noto-fonts libappindicator-gtk3 \
-    lib32-libappindicator-gtk3 --noconfirm
-
-  # Commit changes
-  "$IMAGE" fim-commit
-}
-
-
 function compress_pcsx2()
 {
   msg "${BUILD_DIR:?BUILD_DIR is undefined}"
@@ -116,16 +78,20 @@ function package()
   mkdir -p "$dir_dist" && cd "$dir_dist"
 
   # Move binaries to dist dir
-  mv "$BUILD_DIR"/arch.flatimage pcsx2.flatimage
   mv "$BUILD_DIR"/pcsx2.layer .
 
   # Create sha256sum
-  sha256sum pcsx2.flatimage > pcsx2.flatimage.sha256sum
   sha256sum pcsx2.layer > pcsx2.layer.sha256sum
 }
 
 function main()
 {
+  export IMAGE="$1"
+  if ! [ -f "$IMAGE" ]; then
+    echo "Please specify a regular file as the image path"
+    exit 1
+  fi
+
   # shellcheck disable=2155
   export SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
   export BUILD_DIR="$SCRIPT_DIR/build"
@@ -133,40 +99,13 @@ function main()
   # Re-create build dir
   rm -rf "$BUILD_DIR"; mkdir "$BUILD_DIR"; cd "$BUILD_DIR"
 
-  # Container file path
-  export IMAGE="$BUILD_DIR/arch.flatimage"
-
+  # Fetch latest
   fetch_pcsx2
-  # FlatImage
-  if [[ "$1" = "--flatimage" ]] && [[ -n "$2" ]]; then
-    fetch_flatimage "$2"
-  else
-    fetch_flatimage
-  fi
-
-  # Create directories
-  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.config'
-  "$IMAGE" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
-
-  # Set variables
-  "$IMAGE" fim-env set 'HOME=/home/gameimage' \
-    'PATH="/opt/pcsx2/bin:$PATH"' \
-    'FIM_BINARY_PCSX2="/opt/pcsx2/boot"' \
-    'XDG_CONFIG_HOME=/home/gameimage/.config' \
-    'XDG_DATA_HOME=/home/gameimage/.local/share'
 
   # Compress changes
   compress_pcsx2
 
-  # Set default command
-  "$IMAGE" fim-boot '/opt/pcsx2/boot'
-
-  # Set perms
-  "$IMAGE" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
-
-  # Save changes
-  "$IMAGE" fim-commit
-
+  # Move to dist and create SHA
   package
 }
 

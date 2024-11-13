@@ -15,62 +15,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # Set global vars
 # export FIM_DEBUG=1
 
-# Create a base image
-# $1 image file
-function _create_base()
-{
-  local image="$1"
-
-  # Update
-  "$image" fim-root pacman -Syu --noconfirm
-
-  # Install wine dependencies
-  "$image" fim-root pacman -S --noconfirm wine xorg-server libxinerama lib32-libxinerama \
-    mesa lib32-mesa glxinfo lib32-gcc-libs gcc-libs pcre freetype2 lib32-freetype2 wget aria2 \
-    zenity gstreamer lib32-gstreamer gst-libav gst-plugins-{bad,base,good,ugly} lib32-gst-plugins-{base,good}
-  "$image" fim-root pacman -R --noconfirm wine
-
-  # Gameimage dependencies
-  "$image" fim-root pacman -S --noconfirm noto-fonts libappindicator-gtk3 lib32-libappindicator-gtk3
-
-  # Wine UMU
-  "$image" fim-root pacman -S --noconfirm python python-xlib python-filelock
-}
-
-# Include winetricks
-# $1 image file
-function _include_winetricks()
-{
-  local image="$1"
-
-  "$image" fim-root pacman -S cabextract --noconfirm
-
-  wget -q --show-progress --progress=dot \
-    "https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks" \
-    -O winetricks
-
-  "$image" fim-exec cp ./winetricks /usr/bin/winetricks
-  "$image" fim-exec chmod +x /usr/bin/winetricks
-}
-
-# Include amd video drivers in image
-# $1 image file
-function _include_amd()
-{
-  local image="$1"
-
-  "$image" fim-root pacman -S xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon vulkan-tools --noconfirm
-}
-
-# Include intel video drivers in image
-# $1 image file
-function _include_intel()
-{
-  local image="$1"
-
-  "$image" fim-root pacman -S xf86-video-intel vulkan-intel lib32-vulkan-intel vulkan-tools --noconfirm
-}
-
 function _build_umu()
 {
   # Download proton
@@ -112,7 +56,7 @@ function _package_wine_dists()
     "caffe"
     "vaniglia"
     "soda"
-    "umu"
+    # "umu"
     "staging"
     "tkg"
     "osu-tkg"
@@ -203,96 +147,28 @@ function _package_wine_dists()
 
 function main()
 {
+  local image="$1"
+  if ! [ -f "$image" ]; then
+    echo "Please specify a regular file as the image path"
+    exit 1
+  fi
   # Enter script dir
   cd "$SCRIPT_DIR"
+  # Create build and dist dirs
   mkdir -p dist
   mkdir -p build && cd build
-
   # Enable high verbose for flatimage
   # export FIM_DEBUG_SET_ARGS="-xe"
   export FIM_DEBUG="1"
   export FIM_FIFO="0"
-
-  # shellcheck disable=2155
-  local basename_image=wine.flatimage
-  local image="$SCRIPT_DIR/build/$basename_image"
-
-  # Fetch
-  if [[ "$1" = --flatimage ]]; then
-    [[ -z "$2" ]] && { echo "Please specify image path"; exit 1; }
-    cp "$2" "$image"
-  else
-    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-      | jq -r '.assets.[].browser_download_url | match(".*arch.flatimage$").string')"
-    # Set image name
-    cp ./"arch.flatimage" "$image"
-    chmod +x "$image"
-  fi
-
-  # Enable only home and network
-  "$image" fim-perms set home,network
-
-  if [[ -v BASE_CREATE ]]; then
-    # Create base image
-    _create_base "$image"
-
-    # Create AMD/Intel base
-    _include_amd        "$image"
-    _include_intel      "$image"
-    _include_winetricks "$image"
-
-    # Remove /opt
-    # "$image" fim-exec rm -rf /opt
-
-    # Create directories
-    "$image" fim-exec sh -c 'mkdir -p /home/gameimage/.config'
-    "$image" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
-
-    # Set environment
-    # shellcheck disable=2016
-    "$image" fim-env set 'PATH="/opt/wine/bin:$PATH"' \
-      'FIM_BINARY_WINE="/opt/wine/bin/wine.sh"' \
-      'USER=gameimage' \
-      'HOME=/home/gameimage' \
-      'XDG_CONFIG_HOME=/home/gameimage/.config' \
-      'XDG_DATA_HOME=/home/gameimage/.local/share'
-
-    # shellcheck disable=2016
-    # There is a problem with wine running on overlayfs with bwrap, it works
-    # when the filesystem is bound directly (instead of acessing throught overlayfs)
-    "$image" fim-bind add ro '$FIM_DIR_MOUNT/layers/2/opt/wine' /opt/wine
-
-    # Set startup command
-    # shellcheck disable=2016
-    "$image" fim-boot /opt/wine/bin/wine.sh
-
-    # Set permissions
-    "$image" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
-
-    # Commit configurations
-    "$image" fim-commit
-
-    # Create SHA
-    sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
-    # Release image
-    cp ./"${basename_image}" ../dist
-  fi
-
-  if [[ -v LAYER_CREATE ]]; then
-    # Check for image
-    if [ ! -f "$image" ]; then
-      echo "Could not find image '$image'"
-      exit 1
-    fi
-    # Create wine dists
-    _package_wine_dists "$image"
-    # Create ssha
-    for i in *.layer; do
-      sha256sum "$i" > ../dist/"$i.sha256sum"
-    done
-    # Move layer to dist
-    cp ./*.layer ../dist
-  fi
+  # Create wine dists
+  _package_wine_dists "$image"
+  # Create ssha
+  for i in *.layer; do
+    sha256sum "$i" > ../dist/"$i.sha256sum"
+  done
+  # Move layer to dist
+  cp ./*.layer ../dist
 }
 
 main "$@"

@@ -18,12 +18,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Create package
+    - name: Create layers
       run: |
-        mkdir -p dist
-        # For wine
-        export BASE_CREATE=1
-        export LAYER_CREATE=1
         # Install tools
         sudo apt install -y jq wget tar xz-utils pv git pcregrep
         # Custom packages
@@ -33,12 +29,7 @@ jobs:
           https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64
         chmod +x ./bin/*
         # Build packages
-        ( HOME="$(pwd)" FIM_DEBUG=1 ./${{ matrix.runner }}/build-arch.sh )
-        # Move dist contents to release folder
-        mv ./${{ matrix.runner }}/dist/* ./dist
-        # Clear directories
-        rm -rf ./${{ matrix.runner }}/dist
-        rm -rf ./${{ matrix.runner }}/build
+        ./build.sh
 
     - name: Set permissions for dist directory
       run: |
@@ -73,8 +64,8 @@ jobs:
         - name: release
           uses: marvinpinto/action-automatic-releases@latest
           with:
-            title: continuous gameimage-1.4.x
-            automatic_release_tag: gameimage-1.4.x
+            title: continuous gameimage-1.5.x
+            automatic_release_tag: gameimage-1.5.x
             prerelease: false
             draft: false
             files: |
