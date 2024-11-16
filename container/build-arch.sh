@@ -115,8 +115,7 @@ function main()
     [[ -z "$2" ]] && { echo "Please specify image path"; exit 1; }
     cp "$2" "$image"
   else
-    wget "$(wget -qO - "https://api.github.com/repos/ruanformigoni/flatimage/releases/latest" \
-      | jq -r '.assets.[].browser_download_url | match(".*arch.flatimage$").string')"
+    wget "https://github.com/ruanformigoni/flatimage/releases/download/v1.0.7/arch.flatimage"
     # Set image name
     cp ./"arch.flatimage" "$image"
     rm ./"arch.flatimage"
