@@ -1,5 +1,5 @@
 {
-  "version": "1.4",
+  "version": "1.5",
   "linux": 
   {
     "base": "https://github.com/gameimage/runners/releases/download/gameimage-1.4.x/linux.flatimage"
