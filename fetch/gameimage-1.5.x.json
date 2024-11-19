@@ -18,7 +18,6 @@
     {
       "default": "https://github.com/gameimage/runners/releases/download/gameimage-1.5.x/wine.caffe.layer",
       "caffe": "https://github.com/gameimage/runners/releases/download/gameimage-1.5.x/wine.caffe.layer",
-      "umu-proton-ge": "https://github.com/gameimage/runners/releases/download/gameimage-1.5.x/wine.umu.ge.layer",
       "osu-tkg": "https://github.com/gameimage/runners/releases/download/gameimage-1.5.x/wine.osu-tkg.layer",
       "soda": "https://github.com/gameimage/runners/releases/download/gameimage-1.5.x/wine.soda.layer",
       "staging": "https://github.com/gameimage/runners/releases/download/gameimage-1.5.x/wine.staging.layer",
