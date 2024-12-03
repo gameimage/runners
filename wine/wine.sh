@@ -16,6 +16,13 @@ exec 2> >(sed "s/^/[$SCRIPT_NAME] /" >&2)
 # PATH
 export PATH="/opt/wine/bin:/usr/bin:/opt/wine/files/bin/:$PATH"
 
+# Use wine directly from layers directory
+# A bug that manifests both on overlayfs and fuse-overlayfs
+# with the message '/opt/wine/bin/wine: not an i386 ELF binary... don't know how to load it'
+for i in "$FIM_DIR_MOUNT"/layers/*/opt/wine/bin; do
+  export PATH="$i:$PATH"
+done
+
 # WINE UMU
 export PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
 export PROTONPATH="/opt/wine"
