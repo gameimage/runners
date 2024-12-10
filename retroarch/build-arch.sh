@@ -24,7 +24,7 @@ function fetch_retroarch()
   msg "${BUILD_DIR:?BUILD_DIR is undefined}"
 
   # Fetch latest release
-  url_retroarch="https://buildbot.libretro.com/nightly/linux/x86_64/RetroArch.7z"
+  url_retroarch="https://buildbot.libretro.com/stable/1.19.1/linux/x86_64/RetroArch.7z"
   wget "$url_retroarch"
   name_7z_file="$(basename "$url_retroarch")"
 
