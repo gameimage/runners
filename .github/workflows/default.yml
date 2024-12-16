@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout code
@@ -18,7 +18,7 @@ jobs:
     - name: Create layers
       run: |
         # Install tools
-        sudo apt install -y jq wget tar xz-utils pv git pcregrep
+        sudo apt install -y jq wget tar xz-utils pv git pcregrep fuse3
         # Enable fuse
         sudo modprobe fuse
         # Custom packages
