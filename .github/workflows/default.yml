@@ -19,6 +19,8 @@ jobs:
       run: |
         # Install tools
         sudo apt install -y jq wget tar xz-utils pv git pcregrep
+        # Enable fuse
+        sudo modprobe fuse
         # Custom packages
         mkdir -p bin
         export PATH="$(pwd)/bin:$PATH"
