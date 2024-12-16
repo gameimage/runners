@@ -161,7 +161,8 @@ function main()
   "$image" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
   # Commit configurations
-  "$image" fim-commit
+  ## TODO Remove true when issues with file deletion are solved
+  "$image" fim-commit || true
 
   # Create SHA
   sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
