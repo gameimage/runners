@@ -18,7 +18,7 @@ PLATFORMS=(
 
 IMAGE="$DIR_SCRIPT"/container/dist/linux.flatimage
 
-export FIM_FUSE_OVERLAYFS=1
+export FIM_FUSE_UNIONFS=1
 
 rm -rf dist && mkdir dist
 
