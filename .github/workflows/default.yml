@@ -61,8 +61,8 @@ jobs:
         - name: release
           uses: marvinpinto/action-automatic-releases@latest
           with:
-            title: continuous gameimage-1.5.x
-            automatic_release_tag: gameimage-1.5.x
+            title: continuous gameimage-1.6.x
+            automatic_release_tag: gameimage-1.6.x
             prerelease: false
             draft: false
             files: |
