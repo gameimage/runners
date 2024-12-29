@@ -4,8 +4,8 @@ name: default
 on:
   workflow_dispatch:
   # Build every 7 days
-  schedule:
-    - cron: "0 0 * * 0"
+  # schedule:
+  #   - cron: "0 0 * * 0"
 
 jobs:
   build:
