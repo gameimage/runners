@@ -163,9 +163,15 @@ function main()
   # Remove files in $HOME
   sudo rm -rf ./."${basename_image}".config/overlays/upperdir/home
   
-  # Commit configurations
+  # Commit packages and configurations
   ## TODO Remove true when issues with file deletion are solved
-  "$image" fim-commit || true
+  # The error:
+  # E 15:39:10.353013 cannot access /home/runner/work/runners/runners/container/build/.linux.flatimage.config/overlays/upperdir/usr/lib/dbus-daemon-launch-helper, creating empty file
+  # Causes the commit to fail, use manual method instead
+  # "$image" fim-commit || true
+  "$image" fim-layer create ./."${basename_image}".config/overlays/upperdir ./layer.tmp || true
+  "$image" fim-layer add ./layer.tmp || true
+  rm layer.tmp 
 
   # Create SHA
   sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
