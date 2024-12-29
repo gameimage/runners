@@ -26,7 +26,7 @@ function _create_base()
     mesa lib32-mesa glxinfo lib32-gcc-libs gcc-libs pcre freetype2 lib32-freetype2 wget aria2 \
     zenity gstreamer lib32-gstreamer gst-libav gst-plugins-{bad,base,good,ugly} lib32-gst-plugins-{base,good} \
     noto-fonts sdl2 lib32-sdl2 libxkbcommon libxkbcommon-x11 lib32-libxkbcommon lib32-libxkbcommon-x11 \
-    libsm lib32-libsm fontconfig
+    libsm lib32-libsm fontconfig lib32-freetype2 freetype2
   "$image" fim-root pacman -R --noconfirm wine
 
   # Game dependencies
