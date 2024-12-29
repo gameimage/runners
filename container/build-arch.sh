@@ -160,6 +160,9 @@ function main()
   # Set permissions
   "$image" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
 
+  # Remove files in $HOME
+  sudo rm -rf ./."${basename_image}".config/overlays/upperdir/home
+  
   # Commit configurations
   ## TODO Remove true when issues with file deletion are solved
   "$image" fim-commit || true
