@@ -35,7 +35,7 @@ function _create_base()
     lib32-pipewire pipewire-alsa wireplumber alsa-plugins
     lib32-libpulse pulseaudio-{alsa,equalizer,jack,lirc,zeroconf}
     # GOG Mojo setup & also Trine enchanted edition
-    gtk2 lib32-gtk2
+    # gtk2 lib32-gtk2 # Removed from remote
     # Amnesia A Machine For Pigs
     lib32-glu glu
     # Amnesia The Dark Descent
@@ -43,14 +43,17 @@ function _create_base()
     # Crypt of the necrodancer
     lib32-libxss libxss
     # Hotline miami (sound)
-    speexdsp lib32-speexdsp pipewire-jack lib32-pipewire-jack
+    speexdsp lib32-speexdsp
+    # pipewire-jack lib32-pipewire-jack
+    jack2 lib32-jack2
     # Jazz jackrabbit
     speex libcaca lib32-libcaca
     # Others
-    libpng lib32-libpng libpng12 lib32-libpng12 xorg-xwininfo ffmpeg 
+    # libpng12 lib32-libpng12 # Removed from remote
+    libpng lib32-libpng xorg-xwininfo ffmpeg 
   )
 
-  "$image" fim-root pacman -Rs --noconfirm pipewire-pulse
+  "$image" fim-root pacman -Rs --noconfirm pipewire-pulse || true
   "$image" fim-root pacman -S --noconfirm "${GAME_DEPS[@]}"
 
   # Gameimage dependencies
@@ -104,7 +107,6 @@ function main()
   # Enable high verbose for flatimage
   # export FIM_DEBUG_SET_ARGS="-xe"
   export FIM_DEBUG="1"
-  export FIM_FIFO="0"
 
   # shellcheck disable=2155
   local basename_image=linux.flatimage
@@ -115,10 +117,7 @@ function main()
     [[ -z "$2" ]] && { echo "Please specify image path"; exit 1; }
     cp "$2" "$image"
   else
-    wget "https://github.com/ruanformigoni/flatimage/releases/download/v1.0.8/arch.flatimage"
-    # Set image name
-    cp ./"arch.flatimage" "$image"
-    rm ./"arch.flatimage"
+    wget -O "$image" "https://github.com/flatimage/flatimage/releases/download/v2.0.0/arch-x86_64.flatimage"
     chmod +x "$image"
   fi
 
@@ -155,26 +154,17 @@ function main()
     'XDG_DATA_HOME=/home/gameimage/.local/share'
 
   # Set permissions
-  "$image" fim-boot sh -c 'echo "FlatImage ($FIM_VERSION) for GameImage"'
+  "$image" fim-boot set sh -c 'echo "FlatImage ($FIM_VERSION) for GameImage"'
 
   # Set permissions
-  "$image" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network
+  "$image" fim-perms set home,media,audio,wayland,xorg,dbus_user,dbus_system,udev,usb,input,gpu,network,dev
 
-  # Remove files in $HOME
-  sudo rm -rf ./."${basename_image}".config/overlays/upperdir/home
-  
   # Commit packages and configurations
-  ## TODO Remove true when issues with file deletion are solved
-  # The error:
-  # E 15:39:10.353013 cannot access /home/runner/work/runners/runners/container/build/.linux.flatimage.config/overlays/upperdir/usr/lib/dbus-daemon-launch-helper, creating empty file
-  # Causes the commit to fail, use manual method instead
-  # "$image" fim-commit || true
-  "$image" fim-layer create ./."${basename_image}".config/overlays/upperdir ./layer.tmp || true
-  "$image" fim-layer add ./layer.tmp || true
-  rm layer.tmp 
+  "$image" fim-layer commit binary
 
   # Create SHA
   sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
+
   # Release image
   cp ./"${basename_image}" ../dist
 }

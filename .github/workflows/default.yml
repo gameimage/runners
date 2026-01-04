@@ -9,18 +9,32 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: self-ubuntu-22.04
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Setup GitHub CLI
+      run: |
+        (type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) \
+          && sudo mkdir -p -m 755 /etc/apt/keyrings \
+          && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+          && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+          && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+          && sudo mkdir -p -m 755 /etc/apt/sources.list.d \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create layers
       run: |
         # Install tools
-        sudo apt install -y jq wget tar xz-utils pv git pcregrep fuse3
+        sudo apt install -y jq wget tar xz-utils pv git pcregrep fuse3 python3 p7zip-full
         # Enable fuse
-        sudo modprobe fuse
+        # sudo modprobe fuse
         # Custom packages
         mkdir -p bin
         export PATH="$(pwd)/bin:$PATH"
@@ -29,6 +43,8 @@ jobs:
         chmod +x ./bin/*
         # Build packages
         ./build.sh
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set permissions for dist directory
       run: |
@@ -36,7 +52,7 @@ jobs:
         sudo chmod -R 766 dist/
 
     - name: Upload artifact to release
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: artifacts_build
         path: dist
@@ -55,7 +71,7 @@ jobs:
       runs-on: ubuntu-latest
 
       steps:
-        - uses: actions/download-artifact@v3
+        - uses: actions/download-artifact@v4
           with:
             name: artifacts_build
             path: dist
@@ -63,8 +79,8 @@ jobs:
         - name: release
           uses: marvinpinto/action-automatic-releases@latest
           with:
-            title: continuous gameimage-1.6.x
-            automatic_release_tag: gameimage-1.6.x
+            title: continuous gameimage-2.0.x
+            automatic_release_tag: gameimage-2.0.x
             prerelease: false
             draft: false
             files: |

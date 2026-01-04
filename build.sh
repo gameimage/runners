@@ -12,27 +12,21 @@ DIR_SCRIPT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PLATFORMS=(
   "wine"
   "pcsx2"
-  "rpcs3"
   "retroarch"
+  "rpcs3"
 )
 
 IMAGE="$DIR_SCRIPT"/container/dist/linux.flatimage
 
-export FIM_FUSE_UNIONFS=1
+export FIM_OVERLAY=unionfs
 
 rm -rf dist && mkdir dist
 
 # Create container
-(
-  cd container
-  ./build-arch.sh
-  cp dist/linux.flatimage "$DIR_SCRIPT"/dist/linux.flatimage
-  cp dist/linux.flatimage.sha256sum "$DIR_SCRIPT"/dist/linux.flatimage.sha256sum
-)
+( cd container && ./build-arch.sh )
 
 # Create layers
 for platform in "${PLATFORMS[@]}"; do
   cd "$DIR_SCRIPT"/"$platform"
-  ./build-arch.sh "$IMAGE"
-  mv dist/* "$DIR_SCRIPT"/dist
+  ./build-arch.py "$IMAGE"
 done
