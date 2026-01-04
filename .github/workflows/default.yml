@@ -43,6 +43,8 @@ jobs:
         chmod +x ./bin/*
         # Build packages
         ./build.sh
+        # Generate fetch JSON
+        ./fetch.py gameimage-2.0.x > dist/gameimage-2.0.x.json
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
