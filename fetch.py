@@ -8,8 +8,35 @@
 
 import json
 import sys
+import re
 from pathlib import Path
 from collections import defaultdict
+from urllib.request import urlopen
+from urllib.error import URLError
+
+def fetch_retroarch_cores():
+  """Fetch the list of RetroArch cores from buildbot."""
+  url = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/"
+
+  try:
+    with urlopen(url) as response:
+      html = response.read().decode('utf-8')
+
+    # Extract .so.zip files using regex
+    # Pattern matches: href=".*?latest/(.*?\.so.zip)"
+    pattern = r'href=".*?latest/(.*?\.so\.zip)"'
+    matches = re.findall(pattern, html, re.IGNORECASE)
+
+    # Remove duplicates and sort
+    core_files = sorted(set(matches))
+
+    return {
+      "url": url,
+      "files": core_files
+    }
+  except URLError as e:
+    print(f"Warning: Failed to fetch RetroArch cores from {url}: {e}", file=sys.stderr)
+    return None
 
 def main():
   if len(sys.argv) != 2:
@@ -25,9 +52,11 @@ def main():
     print(f"Error: dist directory not found at {dist_dir}")
     sys.exit(1)
 
+  result = {}
+
   # Parse layer files from dist directory
-  # Structure: platforms[platform][repo][dist_or_stability] = [versions]
-  platforms = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+  # Structure: platforms[platform][owner][repo][dist_or_stability] = [versions]
+  platforms = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
   for layer_file in dist_dir.glob("*.layer"):
     filename = layer_file.stem
@@ -38,12 +67,14 @@ def main():
       continue
 
     platform, owner, repo, dist_or_stability, version_str = parts
-    repo_key = f"{owner}--{repo}"
-    platforms[platform][repo_key][dist_or_stability].append(version_str)
+    platforms[platform][owner][repo][dist_or_stability].append(version_str)
 
   # Build JSON structure
-  result = {
-    "version": version.replace("gameimage-", "").replace(".x", "")
+  result["version"] = version.replace("gameimage-", "").replace(".x", "")
+
+  # Create containers entry
+  result["containers"] = {
+    "arch": "arch.flatimage"
   }
 
   # Add each platform with nested structure
@@ -51,21 +82,20 @@ def main():
     if platform in platforms:
       # Convert nested defaultdicts to regular dicts
       layer_data = {}
-      for repo, dists in platforms[platform].items():
-        layer_data[repo] = dict(dists)
+      for owner, repos in platforms[platform].items():
+        layer_data[owner] = {}
+        for repo, dists in repos.items():
+          layer_data[owner][repo] = dict(dists)
 
       result[platform] = {
         "layer": layer_data
       }
 
-  # Add retroarch cores from existing file if available
+  # Fetch retroarch cores from buildbot
   if "retroarch" in result:
-    fetch_file = script_dir / "fetch" / "gameimage-1.6.x.json"
-    if fetch_file.exists():
-      with open(fetch_file) as f:
-        old_data = json.load(f)
-        if "retroarch" in old_data and "core" in old_data["retroarch"]:
-          result["retroarch"]["core"] = old_data["retroarch"]["core"]
+    cores = fetch_retroarch_cores()
+    if cores:
+      result["retroarch"]["core"] = cores
 
   # Print JSON with proper formatting
   print(json.dumps(result, indent=2))
