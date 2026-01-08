@@ -16,7 +16,7 @@ PLATFORMS=(
   "rpcs3"
 )
 
-IMAGE="$DIR_SCRIPT"/container/dist/linux.flatimage
+IMAGE="$DIR_SCRIPT"/dist/arch.flatimage
 
 export FIM_OVERLAY=unionfs
 

@@ -7,7 +7,9 @@
 
 set -xe
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DIR_SCRIPT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DIR_DIST="$(dirname -- "$DIR_SCRIPT")/dist"
+
 
 # Set global vars
 # export FIM_DEBUG=1
@@ -100,8 +102,7 @@ function _include_intel()
 function main()
 {
   # Enter script dir
-  cd "$SCRIPT_DIR"
-  mkdir -p dist
+  cd "$DIR_SCRIPT"
   mkdir -p build && cd build
 
   # Enable high verbose for flatimage
@@ -109,8 +110,8 @@ function main()
   export FIM_DEBUG="1"
 
   # shellcheck disable=2155
-  local basename_image=linux.flatimage
-  local image="$SCRIPT_DIR/build/$basename_image"
+  local basename_image=arch.flatimage
+  local image="$DIR_SCRIPT/build/$basename_image"
 
   # Fetch
   if [[ "$1" = --flatimage ]]; then
@@ -163,10 +164,10 @@ function main()
   "$image" fim-layer commit binary
 
   # Create SHA
-  sha256sum "${basename_image}" > ../dist/"${basename_image}".sha256sum
+  sha256sum "${basename_image}" > "$DIR_DIST"/"${basename_image}".sha256sum
 
   # Release image
-  cp ./"${basename_image}" ../dist
+  cp ./"${basename_image}" "$DIR_DIST"
 }
 
 main "$@"
