@@ -200,8 +200,9 @@ def build_layer(image_path, dist_name, tarball_path, repo):
   wine_script = SCRIPT_DIR / "wine.sh"
   shutil.copy(wine_script, wine_dir / "bin" / "wine.sh")
 
-  # Create layer with repo/dist/version format
-  layer_name = f"wine--{repo}--{dist_name}--{version_wine}.layer"
+  # Create layer with repo/dist/channel/version format
+  # All wine releases are considered stable (they don't use GitHub prerelease/draft)
+  layer_name = f"wine--{repo}--{dist_name}--stable--{version_wine}.layer"
   print(f"Creating layer: {layer_name}")
 
   result = subprocess.run(

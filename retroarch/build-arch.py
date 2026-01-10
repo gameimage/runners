@@ -229,8 +229,8 @@ def build_layer(image_path, retroarch_dir, version):
   layer_retroarch_dir = opt_dir / "retroarch"
   shutil.move(str(retroarch_dir), str(layer_retroarch_dir))
 
-  # Create layer with source identifier
-  layer_name = f"retroarch--libretro--stable--stable--{version}.layer"
+  # Create layer with distribution=main and channel=stable
+  layer_name = f"retroarch--libretro--stable--main--stable--{version}.layer"
   print(f"Creating layer: {layer_name}")
 
   result = subprocess.run(

@@ -55,19 +55,19 @@ def main():
   result = {}
 
   # Parse layer files from dist directory
-  # Structure: platforms[platform][owner][repo][dist_or_stability] = [versions]
-  platforms = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+  # Structure: platforms[platform][owner][repo][distribution][channel] = [versions]
+  platforms = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))))
 
   for layer_file in dist_dir.glob("*.layer"):
     filename = layer_file.stem
     parts = filename.split("--")
 
-    if len(parts) != 5:
+    if len(parts) != 6:
       print(f"Warning: Unexpected layer format: {filename}", file=sys.stderr)
       continue
 
-    platform, owner, repo, dist_or_stability, version_str = parts
-    platforms[platform][owner][repo][dist_or_stability].append(version_str)
+    platform, owner, repo, distribution, channel, version_str = parts
+    platforms[platform][owner][repo][distribution][channel].append(version_str)
 
   # Build JSON structure
   result["version"] = version.replace("gameimage-", "").replace(".x", "")
@@ -84,8 +84,10 @@ def main():
       layer_data = {}
       for owner, repos in platforms[platform].items():
         layer_data[owner] = {}
-        for repo, dists in repos.items():
-          layer_data[owner][repo] = dict(dists)
+        for repo, distributions in repos.items():
+          layer_data[owner][repo] = {}
+          for distribution, channels in distributions.items():
+            layer_data[owner][repo][distribution] = dict(channels)
 
       result[platform] = {
         "layer": layer_data

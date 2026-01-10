@@ -21,7 +21,7 @@ def fetch_pcsx2_urls():
   Fetch download URLs for PCSX2 AppImages from GitHub releases.
 
   Returns:
-    Tuple of (stable_urls, unstable_urls) where stable are from non-prerelease
+    Tuple of (stable_urls, unstable_urls) where stable are from non-draft and non-prerelease
     and unstable are from prerelease releases
   """
   result = subprocess.run(
@@ -40,7 +40,13 @@ def fetch_pcsx2_urls():
     unstable_urls = []
 
     for release in releases:
+      is_draft = release.get("draft", False)
       is_prerelease = release.get("prerelease", False)
+
+      # Skip draft releases
+      if is_draft:
+        continue
+
       for asset in release.get("assets", []):
         url = asset.get("browser_download_url", "")
         if url.endswith(".AppImage"):
@@ -200,7 +206,7 @@ def get_version_from_appimage(appimage_name):
   return Path(appimage_name).stem
 
 
-def build_layer(image_path, pcsx2_dir, version, stability):
+def build_layer(image_path, pcsx2_dir, version, channel):
   """
   Build a PCSX2 layer.
 
@@ -208,12 +214,12 @@ def build_layer(image_path, pcsx2_dir, version, stability):
     image_path: Path to the flatimage
     pcsx2_dir: Path to the pcsx2 directory
     version: Version string
-    stability: "stable" or "unstable"
+    channel: "stable" or "unstable"
 
   Returns:
     Path to created layer file or None if failed
   """
-  print(f"Building layer for version: {version} ({stability})")
+  print(f"Building layer for version: {version} ({channel})")
 
   # Copy boot script
   boot_script = SCRIPT_DIR / "boot.sh"
@@ -232,8 +238,8 @@ def build_layer(image_path, pcsx2_dir, version, stability):
   layer_pcsx2_dir = opt_dir / "pcsx2"
   shutil.move(str(pcsx2_dir), str(layer_pcsx2_dir))
 
-  # Create layer with repo-owner and stability in name
-  layer_name = f"pcsx2--PCSX2--pcsx2--{stability}--{version}.layer"
+  # Create layer with distribution=main and channel
+  layer_name = f"pcsx2--PCSX2--pcsx2--main--{channel}--{version}.layer"
   print(f"Creating layer: {layer_name}")
 
   result = subprocess.run(

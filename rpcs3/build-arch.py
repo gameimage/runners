@@ -22,7 +22,8 @@ def fetch_rpcs3_urls():
   Fetch download URLs for RPCS3 AppImages from GitHub releases.
 
   Returns:
-    List of AppImage download URLs
+    Tuple of (stable_urls, unstable_urls) where stable are from non-draft and non-prerelease
+    and unstable are from prerelease releases
   """
   result = subprocess.run(
     ["gh", "api", "--paginate", "repos/RPCS3/rpcs3-binaries-linux/releases"],
@@ -32,22 +33,33 @@ def fetch_rpcs3_urls():
 
   if result.returncode != 0:
     print(f"Error fetching RPCS3 releases: {result.stderr}", file=sys.stderr)
-    return []
+    return [], []
 
   try:
     releases = json.loads(result.stdout)
-    urls = []
+    stable_urls = []
+    unstable_urls = []
 
     for release in releases:
+      is_draft = release.get("draft", False)
+      is_prerelease = release.get("prerelease", False)
+
+      # Skip draft releases
+      if is_draft:
+        continue
+
       for asset in release.get("assets", []):
         url = asset.get("browser_download_url", "")
         if url.endswith(".AppImage"):
-          urls.append(url)
+          if is_prerelease:
+            unstable_urls.append(url)
+          else:
+            stable_urls.append(url)
 
-    return urls
+    return stable_urls, unstable_urls
   except json.JSONDecodeError as e:
     print(f"Error parsing JSON: {e}", file=sys.stderr)
-    return []
+    return [], []
 
 
 def get_latest_per_minor_version(urls, count=10):
@@ -196,7 +208,7 @@ def get_version_from_appimage(appimage_name):
   return Path(appimage_name).stem
 
 
-def build_layer(image_path, rpcs3_dir, version):
+def build_layer(image_path, rpcs3_dir, version, channel):
   """
   Build an RPCS3 layer.
 
@@ -204,11 +216,12 @@ def build_layer(image_path, rpcs3_dir, version):
     image_path: Path to the flatimage
     rpcs3_dir: Path to the rpcs3 directory
     version: Version string
+    channel: "stable" or "unstable"
 
   Returns:
     Path to created layer file or None if failed
   """
-  print(f"Building layer for version: {version}")
+  print(f"Building layer for version: {version} ({channel})")
 
   # Copy boot script
   boot_script = SCRIPT_DIR / "boot.sh"
@@ -227,8 +240,8 @@ def build_layer(image_path, rpcs3_dir, version):
   layer_rpcs3_dir = opt_dir / "rpcs3"
   shutil.move(str(rpcs3_dir), str(layer_rpcs3_dir))
 
-  # Create layer
-  layer_name = f"rpcs3--RPCS3--rpcs3-binaries-linux--latest--{version}.layer"
+  # Create layer with distribution=main and channel
+  layer_name = f"rpcs3--RPCS3--rpcs3-binaries-linux--main--{channel}--{version}.layer"
   print(f"Creating layer: {layer_name}")
 
   result = subprocess.run(
@@ -247,50 +260,81 @@ def build_layer(image_path, rpcs3_dir, version):
   return Path(layer_name)
 
 
-def package_rpcs3(image_path, count=10):
+def package_rpcs3(image_path, stable_count=5, unstable_count=5):
   """
   Package RPCS3 distributions.
 
   Args:
     image_path: Path to the flatimage
-    count: Number of minor versions to build (default: 10)
+    stable_count: Number of stable minor versions to build (default: 5)
+    unstable_count: Number of unstable minor versions to build (default: 5)
   """
   print("\n=== Fetching RPCS3 releases ===")
 
-  # Fetch all URLs
-  all_urls = fetch_rpcs3_urls()
-  if not all_urls:
+  # Fetch all URLs (separated by channel)
+  stable_urls, unstable_urls = fetch_rpcs3_urls()
+
+  if not stable_urls and not unstable_urls:
     print("No URLs found for RPCS3, exiting...")
     return
 
-  # Get latest from each minor version (0.0.38-max, 0.0.37-max, etc.)
-  selected_urls = get_latest_per_minor_version(all_urls, count=count)
-  print(f"Found {len(selected_urls)} versions to build")
-
   build_dir = SCRIPT_DIR / "build"
 
-  # Process each version
-  for url in selected_urls:
-    print(f"\n=== Processing {Path(url).name} ===")
+  # Process stable releases
+  if stable_urls:
+    print(f"\n=== Processing STABLE releases ===")
+    selected_stable = get_latest_per_minor_version(stable_urls, count=stable_count)
+    print(f"Found {len(selected_stable)} stable versions to build")
 
-    # Download AppImage
-    appimage_path = download_appimage(url, build_dir)
-    if not appimage_path:
-      continue
+    for url in selected_stable:
+      print(f"\n=== Processing {Path(url).name} (STABLE) ===")
 
-    # Extract AppImage
-    rpcs3_dir = extract_appimage(appimage_path, build_dir)
-    if not rpcs3_dir:
-      continue
+      # Download AppImage
+      appimage_path = download_appimage(url, build_dir)
+      if not appimage_path:
+        continue
 
-    # Get version from filename
-    version = get_version_from_appimage(appimage_path.name)
+      # Extract AppImage
+      rpcs3_dir = extract_appimage(appimage_path, build_dir)
+      if not rpcs3_dir:
+        continue
 
-    # Build layer
-    layer_path = build_layer(image_path, rpcs3_dir, version)
-    if not layer_path:
-      print(f"Failed to build layer for {url}", file=sys.stderr)
-      continue
+      # Get version from filename
+      version = get_version_from_appimage(appimage_path.name)
+
+      # Build layer
+      layer_path = build_layer(image_path, rpcs3_dir, version, "stable")
+      if not layer_path:
+        print(f"Failed to build layer for {url}", file=sys.stderr)
+        continue
+
+  # Process unstable releases
+  if unstable_urls:
+    print(f"\n=== Processing UNSTABLE releases ===")
+    selected_unstable = get_latest_per_minor_version(unstable_urls, count=unstable_count)
+    print(f"Found {len(selected_unstable)} unstable versions to build")
+
+    for url in selected_unstable:
+      print(f"\n=== Processing {Path(url).name} (UNSTABLE) ===")
+
+      # Download AppImage
+      appimage_path = download_appimage(url, build_dir)
+      if not appimage_path:
+        continue
+
+      # Extract AppImage
+      rpcs3_dir = extract_appimage(appimage_path, build_dir)
+      if not rpcs3_dir:
+        continue
+
+      # Get version from filename
+      version = get_version_from_appimage(appimage_path.name)
+
+      # Build layer
+      layer_path = build_layer(image_path, rpcs3_dir, version, "unstable")
+      if not layer_path:
+        print(f"Failed to build layer for {url}", file=sys.stderr)
+        continue
 
 
 def main():
@@ -318,8 +362,8 @@ def main():
   build_dir.mkdir()
   subprocess.os.chdir(build_dir)
 
-  # Build RPCS3 distributions
-  package_rpcs3(image_path, count=10)
+  # Build RPCS3 distributions (5 stable + 5 unstable)
+  package_rpcs3(image_path, stable_count=5, unstable_count=5)
 
   # Create SHA256 checksums and move to dist
   print("\n=== Creating SHA256 checksums ===")
