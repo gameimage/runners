@@ -197,8 +197,7 @@ def build_layer(image_path, dist_name, tarball_path, owner, repo):
   print(f"wine version: {version_wine}")
 
   # Copy wine boot script before moving
-  wine_script = SCRIPT_DIR / "wine.sh"
-  shutil.copy(wine_script, temp_wine_dir / "bin" / "wine.sh")
+  shutil.copy(SCRIPT_DIR / "wine.sh", temp_wine_dir / "boot")
 
   # Create layer directories with version
   # Structure: /opt/gameimage/runners/wine/{owner}/{repo}/{dist_name}/stable/{version}/
