@@ -227,16 +227,16 @@ def build_layer(image_path, pcsx2_dir, version, channel):
   shutil.copy(boot_script, boot_dest)
 
   # Create layer directories
+  # Structure: /opt/gameimage/runners/pcsx2/PCSX2/pcsx2/main/{channel}/{version}/
   root_dir = Path("root")
-  opt_dir = root_dir / "opt"
+  layer_version_dir = root_dir / "opt" / "gameimage" / "runners" / "pcsx2" / "PCSX2" / "pcsx2" / "main" / channel / version
   config_dir = root_dir / "home" / "pcsx2" / ".config"
 
-  opt_dir.mkdir(parents=True, exist_ok=True)
+  layer_version_dir.parent.mkdir(parents=True, exist_ok=True)
   config_dir.mkdir(parents=True, exist_ok=True)
 
-  # Move pcsx2 to layer directory
-  layer_pcsx2_dir = opt_dir / "pcsx2"
-  shutil.move(str(pcsx2_dir), str(layer_pcsx2_dir))
+  # Move pcsx2_dir (which contains boot) to version directory
+  shutil.move(str(pcsx2_dir), str(layer_version_dir))
 
   # Create layer with distribution=main and channel
   layer_name = f"pcsx2--PCSX2--pcsx2--main--{channel}--{version}.layer"

@@ -141,14 +141,9 @@ function main()
   "$image" fim-exec sh -c 'mkdir -p /home/gameimage/.local/share'
 
   # Set environment
-  ## Requires to set LD_LIBRARY_PATH to look for libraries in read-only paths,
   ## there is a bug in fuse-overlayfs that causes undefined symbols
   # shellcheck disable=2016
-  "$image" fim-env set 'PATH="/opt/pcsx2/bin:/opt/rpcs3/bin:/opt/retroarch/data/bin:/opt/wine/bin:$PATH"' \
-    'FIM_BINARY_WINE="/opt/wine/bin/wine.sh"' \
-    'FIM_BINARY_RETROARCH="/opt/retroarch/boot"' \
-    'FIM_BINARY_RPCS3="/opt/rpcs3/boot"' \
-    'FIM_BINARY_PCSX2="/opt/pcsx2/boot"' \
+  "$image" fim-env set \
     'USER=gameimage' \
     'HOME=/home/gameimage' \
     'XDG_CONFIG_HOME=/home/gameimage/.config' \

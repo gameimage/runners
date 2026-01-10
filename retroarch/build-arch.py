@@ -211,11 +211,12 @@ def build_layer(image_path, retroarch_dir, version):
   shutil.copy(boot_script, boot_dest)
 
   # Create layer directories
+  # Structure: /opt/gameimage/runners/retroarch/libretro/stable/main/stable/{version}/
   root_dir = Path("root")
-  opt_dir = root_dir / "opt"
+  layer_version_dir = root_dir / "opt" / "gameimage" / "runners" / "retroarch" / "libretro" / "stable" / "main" / "stable" / version
   home_dir = root_dir / "home" / "gameimage"
 
-  opt_dir.mkdir(parents=True, exist_ok=True)
+  layer_version_dir.parent.mkdir(parents=True, exist_ok=True)
   home_dir.mkdir(parents=True, exist_ok=True)
 
   # Move retroarch config to gameimage home
@@ -225,9 +226,8 @@ def build_layer(image_path, retroarch_dir, version):
   if config_src.exists():
     shutil.move(str(config_src), str(config_dest))
 
-  # Move retroarch to layer directory
-  layer_retroarch_dir = opt_dir / "retroarch"
-  shutil.move(str(retroarch_dir), str(layer_retroarch_dir))
+  # Move retroarch_dir (which contains boot) to version directory
+  shutil.move(str(retroarch_dir), str(layer_version_dir))
 
   # Create layer with distribution=main and channel=stable
   layer_name = f"retroarch--libretro--stable--main--stable--{version}.layer"

@@ -229,16 +229,16 @@ def build_layer(image_path, rpcs3_dir, version, channel):
   shutil.copy(boot_script, boot_dest)
 
   # Create layer directories
+  # Structure: /opt/gameimage/runners/rpcs3/RPCS3/rpcs3-binaries-linux/main/{channel}/{version}/
   root_dir = Path("root")
-  opt_dir = root_dir / "opt"
+  layer_version_dir = root_dir / "opt" / "gameimage" / "runners" / "rpcs3" / "RPCS3" / "rpcs3-binaries-linux" / "main" / channel / version
   config_dir = root_dir / "home" / "rpcs3" / ".config"
 
-  opt_dir.mkdir(parents=True, exist_ok=True)
+  layer_version_dir.parent.mkdir(parents=True, exist_ok=True)
   config_dir.mkdir(parents=True, exist_ok=True)
 
-  # Move rpcs3 to layer directory
-  layer_rpcs3_dir = opt_dir / "rpcs3"
-  shutil.move(str(rpcs3_dir), str(layer_rpcs3_dir))
+  # Move rpcs3_dir (which contains boot) to version directory
+  shutil.move(str(rpcs3_dir), str(layer_version_dir))
 
   # Create layer with distribution=main and channel
   layer_name = f"rpcs3--RPCS3--rpcs3-binaries-linux--main--{channel}--{version}.layer"

@@ -19,14 +19,14 @@ export PATH="/opt/wine/bin:/usr/bin:/opt/wine/files/bin/:$PATH"
 # Use wine directly from layers directory
 # A bug that manifests both on overlayfs and fuse-overlayfs
 # with the message '/opt/wine/bin/wine: not an i386 ELF binary... don't know how to load it'
-for i in "$FIM_DIR_MOUNT"/layers/*/opt/wine/bin; do
+for i in "$FIM_DIR_INSTANCE"/layers/*/opt/gameimage/runners/wine/*/*/*/*/*/bin; do
   export PATH="$i:$PATH"
 done
 
-# WINE UMU
-export PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
-export PROTONPATH="/opt/wine"
-export GAMEID="${GAMEID:-gameimage}"
+# # WINE UMU
+# export PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
+# export PROTONPATH="/opt/wine"
+# export GAMEID="${GAMEID:-gameimage}"
 
 # WINE env
 export WINEDEBUG=${WINEDEBUG:-"-all"}
@@ -45,6 +45,7 @@ echo "USER        : $USER"
 echo "WINEDEBUG   : $WINEDEBUG"
 echo "HOME        : $HOME"
 echo "WINEPREFIX  : $WINEPREFIX"
+echo "PATH        : $PATH"
 
 # Create WINEPREFIX
 mkdir -p "$WINEPREFIX"

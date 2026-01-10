@@ -148,7 +148,7 @@ def download(url, dest_dir):
   return Path(filename)
 
 
-def build_layer(image_path, dist_name, tarball_path, repo):
+def build_layer(image_path, dist_name, tarball_path, owner, repo):
   """
   Build a wine layer from an extracted tarball.
 
@@ -156,21 +156,21 @@ def build_layer(image_path, dist_name, tarball_path, repo):
     image_path: Path to the flatimage
     dist_name: Wine distribution name
     tarball_path: Path to the wine tarball
-    repo: Repository in format "owner/repo"
+    owner: Repository owner
+    repo: Repository name
 
   Returns:
     True if successful, False otherwise
   """
+  # First, extract wine to get the version
   root_dir = Path("root")
-  wine_dir = root_dir / "opt" / "wine"
-
-  # Create directories
-  wine_dir.mkdir(parents=True, exist_ok=True)
+  temp_wine_dir = root_dir / "temp_wine"
+  temp_wine_dir.mkdir(parents=True, exist_ok=True)
 
   # Extract wine
   print(f"Extracting {tarball_path}...")
   result = subprocess.run(
-    ["tar", "-xf", str(tarball_path), "-C", str(wine_dir), "--strip-components=1"],
+    ["tar", "-xf", str(tarball_path), "-C", str(temp_wine_dir), "--strip-components=1"],
     capture_output=True
   )
 
@@ -182,7 +182,7 @@ def build_layer(image_path, dist_name, tarball_path, repo):
   tarball_path.unlink()
 
   # Get wine version
-  wine_bin = wine_dir / "bin" / "wine"
+  wine_bin = temp_wine_dir / "bin" / "wine"
   result = subprocess.run(
     [str(wine_bin.resolve()), "--version"],
     capture_output=True,
@@ -196,13 +196,21 @@ def build_layer(image_path, dist_name, tarball_path, repo):
   version_wine = result.stdout.strip().split()[0]
   print(f"wine version: {version_wine}")
 
-  # Copy wine boot script
+  # Copy wine boot script before moving
   wine_script = SCRIPT_DIR / "wine.sh"
-  shutil.copy(wine_script, wine_dir / "bin" / "wine.sh")
+  shutil.copy(wine_script, temp_wine_dir / "bin" / "wine.sh")
 
-  # Create layer with repo/dist/channel/version format
+  # Create layer directories with version
+  # Structure: /opt/gameimage/runners/wine/{owner}/{repo}/{dist_name}/stable/{version}/
+  layer_version_dir = root_dir / "opt" / "gameimage" / "runners" / "wine" / owner / repo / dist_name / "stable" / version_wine
+  layer_version_dir.parent.mkdir(parents=True, exist_ok=True)
+
+  # Move temp_wine_dir (which contains bin/wine) to version directory
+  shutil.move(str(temp_wine_dir), str(layer_version_dir))
+
+  # Create layer with platform--owner--repo--dist--channel--version format
   # All wine releases are considered stable (they don't use GitHub prerelease/draft)
-  layer_name = f"wine--{repo}--{dist_name}--stable--{version_wine}.layer"
+  layer_name = f"wine--{owner}--{repo}--{dist_name}--stable--{version_wine}.layer"
   print(f"Creating layer: {layer_name}")
 
   result = subprocess.run(
@@ -235,9 +243,11 @@ def package_wine_dists(image_path):
 
     # Determine repository based on distribution
     if dist_name in ["caffe", "vaniglia", "soda"]:
-      repo = "bottlesdevs--wine"
+      owner = "bottlesdevs"
+      repo = "wine"
     elif dist_name in ["staging", "tkg"]:
-      repo = "Kron4ek--Wine-Builds"
+      owner = "Kron4ek"
+      repo = "Wine-Builds"
     else:
       print(f"Unknown distribution: {dist_name}", file=sys.stderr)
       continue
@@ -259,7 +269,7 @@ def package_wine_dists(image_path):
       if not tarball_path:
         continue
 
-      if not build_layer(image_path, dist_name, tarball_path, repo):
+      if not build_layer(image_path, dist_name, tarball_path, owner, repo):
         print(f"Failed to build layer for {url}", file=sys.stderr)
         continue
 
